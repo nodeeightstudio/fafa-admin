@@ -31,50 +31,30 @@ CREATE POLICY "Admins can view their own record"
 -- ============================================
 -- COUNSELLORS POLICIES (Admin access)
 -- ============================================
-DROP POLICY IF EXISTS "Anyone can read counsellors" ON counsellors;
-DROP POLICY IF EXISTS "Admins can insert counsellors" ON counsellors;
-DROP POLICY IF EXISTS "Admins can update counsellors" ON counsellors;
-DROP POLICY IF EXISTS "Admins can delete counsellors" ON counsellors;
-
-CREATE POLICY "Anyone can read counsellors"
+DROP POLICY IF EXISTS "Anyone can read active counsellors" ON counsellors;
+CREATE POLICY "Anyone can read active counsellors"
   ON counsellors FOR SELECT
-  USING (true);
+  USING (is_active = true AND status = 'active');
 
-CREATE POLICY "Admins can insert counsellors"
-  ON counsellors FOR INSERT
+DROP POLICY IF EXISTS "Admins can manage counsellors" ON counsellors;
+CREATE POLICY "Admins can manage counsellors"
+  ON counsellors FOR ALL
+  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can update counsellors"
-  ON counsellors FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can delete counsellors"
-  ON counsellors FOR DELETE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
 
 -- ============================================
 -- COUNSELLOR AVAILABILITY POLICIES (Admin access)
 -- ============================================
 DROP POLICY IF EXISTS "Anyone can read counsellor availability" ON counsellor_availability;
-DROP POLICY IF EXISTS "Admins can insert counsellor availability" ON counsellor_availability;
-DROP POLICY IF EXISTS "Admins can update counsellor availability" ON counsellor_availability;
-DROP POLICY IF EXISTS "Admins can delete counsellor availability" ON counsellor_availability;
-
 CREATE POLICY "Anyone can read counsellor availability"
   ON counsellor_availability FOR SELECT
   USING (true);
 
-CREATE POLICY "Admins can insert counsellor availability"
-  ON counsellor_availability FOR INSERT
+DROP POLICY IF EXISTS "Admins can manage availability" ON counsellor_availability;
+CREATE POLICY "Admins can manage availability"
+  ON counsellor_availability FOR ALL
+  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can update counsellor availability"
-  ON counsellor_availability FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can delete counsellor availability"
-  ON counsellor_availability FOR DELETE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
 
 -- ============================================
 -- RESOURCES POLICIES (Admin access)

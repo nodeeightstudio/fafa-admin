@@ -531,7 +531,22 @@ CREATE POLICY "Anyone can read active counsellors"
   ON counsellors FOR SELECT
   USING (is_active = true AND status = 'active');
 
--- Note: Only admins can insert/update counsellors (via service role key)
+-- Admins can do everything
+DROP POLICY IF EXISTS "Admins can manage counsellors" ON counsellors;
+CREATE POLICY "Admins can manage counsellors"
+  ON counsellors FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM admins
+      WHERE admins.id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM admins
+      WHERE admins.id = auth.uid()
+    )
+  );
 
 -- ============================================
 -- COUNSELLOR AVAILABILITY POLICIES
@@ -542,6 +557,23 @@ DROP POLICY IF EXISTS "Anyone can read counsellor availability" ON counsellor_av
 CREATE POLICY "Anyone can read counsellor availability"
   ON counsellor_availability FOR SELECT
   USING (is_active = true);
+
+-- Admins can manage availability
+DROP POLICY IF EXISTS "Admins can manage availability" ON counsellor_availability;
+CREATE POLICY "Admins can manage availability"
+  ON counsellor_availability FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM admins
+      WHERE admins.id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM admins
+      WHERE admins.id = auth.uid()
+    )
+  );
 
 
 

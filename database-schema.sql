@@ -93,13 +93,35 @@ CREATE INDEX idx_comments_created_at ON comments(created_at DESC);
 -- ============================================
 CREATE TABLE IF NOT EXISTS counsellors (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  
+  -- Basic Information
   name TEXT NOT NULL,
-  specialty TEXT NOT NULL,
-  experience TEXT,
+  email TEXT UNIQUE,
+  phone TEXT,
   bio TEXT,
+  avatar_url TEXT,
+  
+  -- Professional Details
+  specialties TEXT[] DEFAULT ARRAY[]::TEXT[],
+  experience TEXT,
+  qualifications TEXT[] DEFAULT ARRAY[]::TEXT[],
+  languages TEXT[] DEFAULT ARRAY['English'],
+  
+  -- Status & Availability
   is_online BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  is_verified BOOLEAN DEFAULT false,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive', 'suspended')),
+  
+  -- Ratings
+  average_rating DECIMAL(3, 2) DEFAULT 0.0,
+  total_reviews INTEGER DEFAULT 0,
+  total_sessions INTEGER DEFAULT 0,
+  
+  -- Metadata
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_active_at TIMESTAMP WITH TIME ZONE
 );
 
 -- ============================================
@@ -165,8 +187,10 @@ CREATE TABLE IF NOT EXISTS resources (
   title TEXT NOT NULL,
   description TEXT,
   category TEXT NOT NULL,
-  type TEXT NOT NULL,
-  url TEXT,
+  type TEXT NOT NULL CHECK (type IN ('video', 'article', 'playlist')),
+  url TEXT, -- Legacy main URL
+  urls TEXT[] DEFAULT ARRAY[]::TEXT[], -- Multiple URLs for videos/playlists
+  content TEXT, -- Rich text content for articles
   image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -502,21 +526,20 @@ CREATE POLICY "Admins can view their own record"
 -- ============================================
 -- COUNSELLORS POLICIES (Updated for admin access)
 -- ============================================
-CREATE POLICY "Anyone can read counsellors"
+DROP POLICY IF EXISTS "Anyone can read counsellors" ON counsellors;
+DROP POLICY IF EXISTS "Anyone can read active counsellors" ON counsellors;
+CREATE POLICY "Anyone can read active counsellors"
   ON counsellors FOR SELECT
-  USING (true);
+  USING (is_active = true AND status = 'active');
 
-CREATE POLICY "Admins can insert counsellors"
-  ON counsellors FOR INSERT
+DROP POLICY IF EXISTS "Admins can manage counsellors" ON counsellors;
+DROP POLICY IF EXISTS "Admins can insert counsellors" ON counsellors;
+DROP POLICY IF EXISTS "Admins can update counsellors" ON counsellors;
+DROP POLICY IF EXISTS "Admins can delete counsellors" ON counsellors;
+CREATE POLICY "Admins can manage counsellors"
+  ON counsellors FOR ALL
+  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can update counsellors"
-  ON counsellors FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
-
-CREATE POLICY "Admins can delete counsellors"
-  ON counsellors FOR DELETE
-  USING (EXISTS (SELECT 1 FROM admins WHERE id = auth.uid()));
 
 -- ============================================
 -- RESOURCES POLICIES (Updated for admin access)

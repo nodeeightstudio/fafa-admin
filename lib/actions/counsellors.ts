@@ -1,108 +1,115 @@
-'use server'
+"use server";
 
-import { createClient } from '@/lib/supabase-server'
-import { Counsellor, CounsellorFormData } from '@/types/counsellor'
+import { createClient } from "@/lib/supabase-server";
+import { Counsellor, CounsellorFormData } from "@/types/counsellor";
 
 export async function getCounsellors(filters?: {
-  status?: string
-  search?: string
-  specialty?: string
-  online?: boolean
+  status?: string;
+  search?: string;
+  specialty?: string;
+  online?: boolean;
 }) {
-  const supabase = await createClient()
-  
-  let query = supabase
-    .from('counsellors')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const supabase = await createClient();
 
-  if (filters?.status && filters.status !== 'all') {
-    query = query.eq('status', filters.status)
+  let query = supabase
+    .from("counsellors")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (filters?.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
   }
 
   if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+    query = query.or(
+      `name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+    );
   }
 
   if (filters?.specialty) {
-    query = query.contains('specialties', [filters.specialty])
+    query = query.contains("specialties", [filters.specialty]);
   }
 
   if (filters?.online) {
-    query = query.eq('is_online', true)
+    query = query.eq("is_online", true);
   }
 
-  const { data, error } = await query
+  const { data, error } = await query;
 
   if (error) {
-    throw new Error(error.message)
+    throw new Error(error.message);
   }
 
-  return data as Counsellor[]
+  return data as Counsellor[];
 }
 
 export async function getCounsellor(id: string) {
-  const supabase = await createClient()
-  
+  const supabase = await createClient();
+
   const { data: counsellor, error: counsellorError } = await supabase
-    .from('counsellors')
-    .select('*')
-    .eq('id', id)
-    .single()
+    .from("counsellors")
+    .select("*")
+    .eq("id", id)
+    .single();
 
   if (counsellorError) {
-    throw new Error('Counsellor not found')
+    throw new Error("Counsellor not found");
   }
 
   // Get availability
   const { data: availability } = await supabase
-    .from('counsellor_availability')
-    .select('*')
-    .eq('counsellor_id', id)
-    .order('day_of_week', { ascending: true })
+    .from("counsellor_availability")
+    .select("*")
+    .eq("counsellor_id", id)
+    .order("day_of_week", { ascending: true });
 
   // Get recent reviews
   const { data: reviews } = await supabase
-    .from('reviews')
-    .select('rating, comment, created_at')
-    .eq('counsellor_id', id)
-    .eq('is_visible', true)
-    .order('created_at', { ascending: false })
-    .limit(10)
+    .from("reviews")
+    .select("rating, comment, created_at")
+    .eq("counsellor_id", id)
+    .eq("is_visible", true)
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   return {
     ...counsellor,
     availability: availability || [],
-    reviews: reviews || []
-  }
+    reviews: reviews || [],
+  };
 }
 
 export async function createCounsellor(formData: CounsellorFormData) {
-  const supabase = await createClient()
-  
+  const supabase = await createClient();
+
   // Debug: Check if user is authenticated and is admin
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  console.log('🔍 User:', user?.id, user?.email)
-  
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  console.log("🔍 User:", user?.id, user?.email);
+
   if (!user) {
-    throw new Error('Not authenticated')
+    throw new Error("Not authenticated");
   }
-  
+
   // Check if user is admin
   const { data: adminCheck, error: adminError } = await supabase
-    .from('admins')
-    .select('id')
-    .eq('id', user.id)
-    .single()
-  
-  console.log('🔍 Admin check:', adminCheck, adminError)
-  
+    .from("admins")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  console.log("🔍 Admin check:", adminCheck, adminError);
+
   if (!adminCheck) {
-    throw new Error('User is not an admin. Please ensure your user ID is in the admins table.')
+    throw new Error(
+      "User is not an admin. Please ensure your user ID is in the admins table."
+    );
   }
-  
+
   const { data, error } = await supabase
-    .from('counsellors')
+    .from("counsellors")
     .insert({
       name: formData.name,
       email: formData.email || null,
@@ -112,74 +119,93 @@ export async function createCounsellor(formData: CounsellorFormData) {
       specialties: formData.specialties,
       experience: formData.experience || null,
       qualifications: formData.qualifications || [],
-      languages: formData.languages || ['English'],
+      languages: formData.languages || ["English"],
       is_active: formData.is_active ?? true,
       is_verified: formData.is_verified ?? false,
-      status: formData.status || 'pending'
+      status: formData.status || "pending",
     })
     .select()
-    .single()
+    .single();
 
   if (error) {
-    console.error('❌ Insert error:', error)
-    throw new Error(error.message)
+    console.error("❌ Insert error:", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw new Error(
+      `Failed to create counsellor: ${error.message}${
+        error.hint ? " - " + error.hint : ""
+      }`
+    );
   }
 
-  return data as Counsellor
+  return data as Counsellor;
 }
 
-export async function updateCounsellor(id: string, formData: Partial<CounsellorFormData>) {
-  const supabase = await createClient()
-  
+export async function updateCounsellor(
+  id: string,
+  formData: Partial<CounsellorFormData>
+) {
+  const supabase = await createClient();
+
   const updateData: any = {
-    updated_at: new Date().toISOString()
-  }
+    updated_at: new Date().toISOString(),
+  };
 
   // Only update provided fields
-  if (formData.name !== undefined) updateData.name = formData.name
-  if (formData.email !== undefined) updateData.email = formData.email
-  if (formData.phone !== undefined) updateData.phone = formData.phone
-  if (formData.bio !== undefined) updateData.bio = formData.bio
-  if (formData.avatar_url !== undefined) updateData.avatar_url = formData.avatar_url
-  if (formData.specialties !== undefined) updateData.specialties = formData.specialties
-  if (formData.experience !== undefined) updateData.experience = formData.experience
-  if (formData.qualifications !== undefined) updateData.qualifications = formData.qualifications
-  if (formData.languages !== undefined) updateData.languages = formData.languages
-  if (formData.is_active !== undefined) updateData.is_active = formData.is_active
-  if (formData.is_verified !== undefined) updateData.is_verified = formData.is_verified
-  if (formData.status !== undefined) updateData.status = formData.status
+  if (formData.name !== undefined) updateData.name = formData.name;
+  if (formData.email !== undefined) updateData.email = formData.email;
+  if (formData.phone !== undefined) updateData.phone = formData.phone;
+  if (formData.bio !== undefined) updateData.bio = formData.bio;
+  if (formData.avatar_url !== undefined)
+    updateData.avatar_url = formData.avatar_url;
+  if (formData.specialties !== undefined)
+    updateData.specialties = formData.specialties;
+  if (formData.experience !== undefined)
+    updateData.experience = formData.experience;
+  if (formData.qualifications !== undefined)
+    updateData.qualifications = formData.qualifications;
+  if (formData.languages !== undefined)
+    updateData.languages = formData.languages;
+  if (formData.is_active !== undefined)
+    updateData.is_active = formData.is_active;
+  if (formData.is_verified !== undefined)
+    updateData.is_verified = formData.is_verified;
+  if (formData.status !== undefined) updateData.status = formData.status;
 
   const { data, error } = await supabase
-    .from('counsellors')
+    .from("counsellors")
     .update(updateData)
-    .eq('id', id)
+    .eq("id", id)
     .select()
-    .single()
+    .single();
 
   if (error) {
-    throw new Error(error.message)
+    throw new Error(error.message);
   }
 
-  return data as Counsellor
+  return data as Counsellor;
 }
 
 export async function deleteCounsellor(id: string) {
-  const supabase = await createClient()
-  
+  const supabase = await createClient();
+
   const { data, error } = await supabase
-    .from('counsellors')
-    .update({ 
-      status: 'inactive',
+    .from("counsellors")
+    .update({
+      status: "inactive",
       is_active: false,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', id)
+    .eq("id", id)
     .select()
-    .single()
+    .single();
 
   if (error) {
-    throw new Error(error.message)
+    throw new Error(error.message);
   }
 
-  return data as Counsellor
+  return data as Counsellor;
 }
