@@ -1,4 +1,9 @@
-export type ResourceType = "video" | "article" | "playlist";
+export type ResourceType =
+  | "video"
+  | "article"
+  | "playlist"
+  | "audio"
+  | "podcast";
 
 export interface Resource {
   id: string;

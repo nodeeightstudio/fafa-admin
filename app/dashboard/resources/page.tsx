@@ -35,6 +35,8 @@ import {
   FileText,
   ListMusic,
   ExternalLink,
+  Music,
+  Mic,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -83,6 +85,10 @@ export default function ResourcesPage() {
         return <FileText className="h-4 w-4" />;
       case "playlist":
         return <ListMusic className="h-4 w-4" />;
+      case "audio":
+        return <Music className="h-4 w-4" />;
+      case "podcast":
+        return <Mic className="h-4 w-4" />;
       default:
         return null;
     }
@@ -124,6 +130,8 @@ export default function ResourcesPage() {
                   <SelectItem value="video">Videos</SelectItem>
                   <SelectItem value="article">Articles</SelectItem>
                   <SelectItem value="playlist">Playlists</SelectItem>
+                  <SelectItem value="audio">Audio</SelectItem>
+                  <SelectItem value="podcast">Podcast</SelectItem>
                 </SelectContent>
               </Select>
             </div>

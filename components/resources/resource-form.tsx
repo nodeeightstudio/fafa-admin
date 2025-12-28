@@ -36,7 +36,7 @@ const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   category: z.string().min(1, "Category is required"),
-  type: z.enum(["video", "article", "playlist"]),
+  type: z.enum(["video", "article", "playlist", "audio", "podcast"]),
   url: z.string().optional().or(z.literal("")),
   urls: z.array(z.string().url("Invalid URL")).optional(),
   content: z.string().optional(),
@@ -83,7 +83,10 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
         ...values,
         image_url: finalImageUrl,
         urls:
-          resourceType === "video" || resourceType === "playlist"
+          resourceType === "video" ||
+          resourceType === "playlist" ||
+          resourceType === "podcast" ||
+          resourceType === "audio"
             ? urls.filter((u) => u !== "")
             : [],
       };
@@ -178,6 +181,8 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
                             <SelectItem value="video">Video</SelectItem>
                             <SelectItem value="article">Article</SelectItem>
                             <SelectItem value="playlist">Playlist</SelectItem>
+                            <SelectItem value="audio">Audio</SelectItem>
+                            <SelectItem value="podcast">Podcast</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -232,7 +237,10 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
               </Card>
             )}
 
-            {(resourceType === "video" || resourceType === "playlist") && (
+            {(resourceType === "video" ||
+              resourceType === "playlist" ||
+              resourceType === "audio" ||
+              resourceType === "podcast") && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>URLs</CardTitle>
