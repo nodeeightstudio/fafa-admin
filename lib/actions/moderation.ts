@@ -4,25 +4,80 @@ import { createClient } from "@/lib/supabase-server";
 import { Report, ReportStatus, ReportedType } from "@/types/moderation";
 import { revalidatePath } from "next/cache";
 
-export async function getReports(status?: ReportStatus) {
+export async function getReports(
+  status?: ReportStatus,
+  page = 1,
+  pageSize = 10
+) {
   const supabase = await createClient();
 
   let query = supabase
     .from("reports")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (status && status !== "pending") {
     query = query.eq("status", status);
   }
 
-  const { data, error } = await query;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await query.range(from, to);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return data as Report[];
+  return {
+    data: data as Report[],
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}
+
+export async function getSuspendedUsers(page = 1, pageSize = 10) {
+  const supabase = await createClient();
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact" })
+    .eq("is_active", false)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    data: data as any[], // Typing as any for now to avoid strict profile type issues
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}
+
+export async function reinstateUser(userId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_active: true })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/reports");
+  return true;
 }
 
 export async function getReportedContent(type: ReportedType, id: string) {

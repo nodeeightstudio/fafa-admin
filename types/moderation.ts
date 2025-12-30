@@ -23,3 +23,11 @@ export interface ModeratedContent {
   author_id: string;
   author_name?: string;
 }
+
+export interface SuspendedUser {
+  id: string;
+  created_at: string;
+  is_active: boolean;
+  avatar_number: number;
+  email?: string;
+}
