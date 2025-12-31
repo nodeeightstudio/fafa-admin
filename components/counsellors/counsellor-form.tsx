@@ -47,6 +47,10 @@ export function CounsellorForm({
   );
   const [newQualification, setNewQualification] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    initialData?.avatar_url || null
+  );
 
   const {
     register,
@@ -100,24 +104,32 @@ export function CounsellorForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
-    try {
-      const url = await uploadImage(file, "fafa-counsellors");
-      setValue("avatar_url", url);
-    } catch (error: any) {
-      alert(error.message || "Failed to upload image");
-    } finally {
-      setUploading(false);
-    }
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
   };
 
   const handleFormSubmit = async (data: CounsellorFormData) => {
-    await onSubmit({
-      ...data,
-      specialties: selectedSpecialties,
-      languages: selectedLanguages,
-      qualifications,
-    });
+    setUploading(true);
+    try {
+      let finalAvatarUrl = data.avatar_url;
+
+      if (selectedFile) {
+        finalAvatarUrl = await uploadImage(selectedFile, "fafa-resources");
+      }
+
+      await onSubmit({
+        ...data,
+        avatar_url: finalAvatarUrl,
+        specialties: selectedSpecialties,
+        languages: selectedLanguages,
+        qualifications,
+      });
+    } catch (error: any) {
+      alert(error.message || "Failed to save counsellor");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -173,9 +185,9 @@ export function CounsellorForm({
           <Label>Avatar Image</Label>
           <div className="flex items-center gap-4 mt-2">
             <div className="relative h-20 w-20 rounded-full bg-muted overflow-hidden flex items-center justify-center border">
-              {watch("avatar_url") ? (
+              {previewUrl ? (
                 <Image
-                  src={watch("avatar_url")!}
+                  src={previewUrl}
                   alt="Avatar preview"
                   fill
                   className="object-cover"
