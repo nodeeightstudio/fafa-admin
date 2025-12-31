@@ -1,11 +1,17 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { supabase, isUserAdmin } from '@/lib/supabase'
-import { Counsellor } from '@/types/counsellor'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { supabase, isUserAdmin } from "@/lib/supabase";
+import { Counsellor } from "@/types/counsellor";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,93 +19,95 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { Separator } from '@/components/ui/separator'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CounsellorForm } from '@/components/counsellors/counsellor-form'
-import { AvailabilityScheduler } from '@/components/counsellors/availability-scheduler'
-import { getCounsellor, updateCounsellor } from '@/lib/actions/counsellors'
-import { Edit, Mail, Phone, Calendar, Star } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CounsellorForm } from "@/components/counsellors/counsellor-form";
+import { AvailabilityScheduler } from "@/components/counsellors/availability-scheduler";
+import { getCounsellor, updateCounsellor } from "@/lib/actions/counsellors";
+import { Edit, Mail, Phone, Calendar, Star } from "lucide-react";
 
 export default function CounsellorDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const counsellorId = params.id as string
+  const params = useParams();
+  const router = useRouter();
+  const counsellorId = params.id as string;
 
-  const [counsellor, setCounsellor] = useState<Counsellor | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [formLoading, setFormLoading] = useState(false)
+  const [counsellor, setCounsellor] = useState<Counsellor | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
-      const adminStatus = await isUserAdmin()
+      const adminStatus = await isUserAdmin();
       if (!adminStatus) {
-        alert('Access denied. Admin privileges required.')
-        await supabase.auth.signOut()
-        router.push('/login')
-        return
+        alert("Access denied. Admin privileges required.");
+        await supabase.auth.signOut();
+        router.push("/login");
+        return;
       }
 
-      fetchCounsellor()
-    }
-    checkAuth()
-  }, [router, counsellorId])
+      fetchCounsellor();
+    };
+    checkAuth();
+  }, [router, counsellorId]);
 
   const fetchCounsellor = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await getCounsellor(counsellorId)
-      setCounsellor(data as any)
+      const data = await getCounsellor(counsellorId);
+      setCounsellor(data as any);
     } catch (error) {
-      alert('Failed to load counsellor')
-      router.push('/dashboard/counsellors')
+      alert("Failed to load counsellor");
+      router.push("/dashboard/counsellors");
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const handleUpdateCounsellor = async (formData: any) => {
-    setFormLoading(true)
+    setFormLoading(true);
     try {
-      await updateCounsellor(counsellorId, formData)
-      setIsEditModalOpen(false)
-      await fetchCounsellor()
+      await updateCounsellor(counsellorId, formData);
+      setIsEditModalOpen(false);
+      await fetchCounsellor();
     } catch (error: any) {
-      alert(error.message || 'Failed to update counsellor')
+      alert(error.message || "Failed to update counsellor");
     }
-    setFormLoading(false)
-  }
+    setFormLoading(false);
+  };
 
   if (loading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (!counsellor) {
-    return <div>Counsellor not found</div>
+    return <div>Counsellor not found</div>;
   }
 
   const initials = counsellor.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2);
 
   return (
     <>
@@ -113,9 +121,7 @@ export default function CounsellorDetailPage() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
@@ -139,14 +145,22 @@ export default function CounsellorDetailPage() {
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={counsellor.avatar_url || undefined} alt={counsellor.name} />
-                  <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+                  <AvatarImage
+                    src={counsellor.avatar_url || undefined}
+                    alt={counsellor.name}
+                  />
+                  <AvatarFallback className="text-2xl">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h1 className="text-2xl font-bold">{counsellor.name}</h1>
                     {counsellor.is_verified && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-600">
+                      <Badge
+                        variant="outline"
+                        className="text-blue-600 border-blue-600"
+                      >
                         ✓ Verified
                       </Badge>
                     )}
@@ -189,7 +203,9 @@ export default function CounsellorDetailPage() {
               <CardDescription>Total Sessions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counsellor.total_sessions}</div>
+              <div className="text-2xl font-bold">
+                {counsellor.total_sessions}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -208,7 +224,9 @@ export default function CounsellorDetailPage() {
               <CardDescription>Total Reviews</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counsellor.total_reviews}</div>
+              <div className="text-2xl font-bold">
+                {counsellor.total_reviews}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -216,9 +234,7 @@ export default function CounsellorDetailPage() {
               <CardDescription>Status</CardDescription>
             </CardHeader>
             <CardContent>
-              <Badge className="text-sm">
-                {counsellor.status}
-              </Badge>
+              <Badge className="text-sm">{counsellor.status}</Badge>
             </CardContent>
           </Card>
         </div>
@@ -243,10 +259,34 @@ export default function CounsellorDetailPage() {
                     <p className="text-muted-foreground">{counsellor.bio}</p>
                   </div>
                 )}
-                {counsellor.experience && (
+                {(counsellor.experience || counsellor.experience_years) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {counsellor.experience && (
+                      <div>
+                        <h3 className="font-semibold mb-2">
+                          Experience (Title)
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {counsellor.experience}
+                        </p>
+                      </div>
+                    )}
+                    {counsellor.experience_years !== undefined && (
+                      <div>
+                        <h3 className="font-semibold mb-2">
+                          Years of Experience
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {counsellor.experience_years}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {counsellor.gender && (
                   <div>
-                    <h3 className="font-semibold mb-2">Experience</h3>
-                    <p className="text-muted-foreground">{counsellor.experience}</p>
+                    <h3 className="font-semibold mb-2">Gender</h3>
+                    <p className="text-muted-foreground">{counsellor.gender}</p>
                   </div>
                 )}
                 {counsellor.qualifications.length > 0 && (
@@ -263,7 +303,9 @@ export default function CounsellorDetailPage() {
                   <h3 className="font-semibold mb-2">Languages</h3>
                   <div className="flex flex-wrap gap-2">
                     {counsellor.languages.map((lang) => (
-                      <Badge key={lang} variant="outline">{lang}</Badge>
+                      <Badge key={lang} variant="outline">
+                        {lang}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -294,25 +336,38 @@ export default function CounsellorDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {(counsellor as any).reviews && (counsellor as any).reviews.length > 0 ? (
+                {(counsellor as any).reviews &&
+                (counsellor as any).reviews.length > 0 ? (
                   <div className="space-y-4">
-                    {(counsellor as any).reviews.map((review: any, index: number) => (
-                      <div key={index} className="border-b pb-4 last:border-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex">
-                            {Array.from({ length: review.rating }).map((_, i) => (
-                              <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            ))}
+                    {(counsellor as any).reviews.map(
+                      (review: any, index: number) => (
+                        <div
+                          key={index}
+                          className="border-b pb-4 last:border-0"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex">
+                              {Array.from({ length: review.rating }).map(
+                                (_, i) => (
+                                  <Star
+                                    key={i}
+                                    className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                  />
+                                )
+                              )}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
+                          {review.comment && (
+                            <p className="text-sm text-muted-foreground">
+                              {review.comment}
+                            </p>
+                          )}
                         </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No reviews yet</p>
@@ -340,6 +395,8 @@ export default function CounsellorDetailPage() {
               bio: counsellor.bio || undefined,
               avatar_url: counsellor.avatar_url || undefined,
               experience: counsellor.experience || undefined,
+              experience_years: counsellor.experience_years,
+              gender: counsellor.gender,
             }}
             onSubmit={handleUpdateCounsellor}
             onCancel={() => setIsEditModalOpen(false)}
@@ -348,5 +405,5 @@ export default function CounsellorDetailPage() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

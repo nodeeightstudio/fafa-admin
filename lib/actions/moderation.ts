@@ -67,13 +67,19 @@ export async function getSuspendedUsers(page = 1, pageSize = 10) {
 export async function reinstateUser(userId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("profiles")
-    .update({ is_active: true })
+    .update({ is_active: true }, { count: "exact" })
     .eq("id", userId);
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (count === 0) {
+    throw new Error(
+      "Permission denied: Could not reinstate user. Please check admin policies."
+    );
   }
 
   revalidatePath("/dashboard/reports");
@@ -146,23 +152,27 @@ export async function deleteReportedContent(
 ) {
   const supabase = await createClient();
 
-  let error;
+  let result;
   if (type === "post") {
-    const result = await supabase
+    result = await supabase
       .from("posts")
-      .update({ is_deleted: true })
+      .update({ is_deleted: true }, { count: "exact" })
       .eq("id", contentId);
-    error = result.error;
   } else if (type === "comment") {
-    const result = await supabase
+    result = await supabase
       .from("comments")
-      .update({ is_deleted: true })
+      .update({ is_deleted: true }, { count: "exact" })
       .eq("id", contentId);
-    error = result.error;
   }
 
-  if (error) {
-    throw new Error(error.message);
+  if (result?.error) {
+    throw new Error(result.error.message);
+  }
+
+  if (result && result.count === 0) {
+    throw new Error(
+      `Permission denied: Could not update ${type}. Please check admin policies.`
+    );
   }
 
   // Update report as resolved
@@ -175,13 +185,19 @@ export async function deleteReportedContent(
 export async function suspendUser(reportId: string, userId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("profiles")
-    .update({ is_active: false })
+    .update({ is_active: false }, { count: "exact" })
     .eq("id", userId);
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (count === 0) {
+    throw new Error(
+      "Permission denied: Could not suspend user. Please check admin policies."
+    );
   }
 
   // Update report as resolved

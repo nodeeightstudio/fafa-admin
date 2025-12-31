@@ -1,100 +1,136 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { CounsellorFormData, CounsellorStatus, SPECIALTIES } from '@/types/counsellor'
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  CounsellorFormData,
+  CounsellorStatus,
+  SPECIALTIES,
+} from "@/types/counsellor";
+import { uploadImage } from "@/lib/upload";
+import { Loader2, Upload } from "lucide-react";
+import Image from "next/image";
 
 interface CounsellorFormProps {
-  initialData?: Partial<CounsellorFormData>
-  onSubmit: (data: CounsellorFormData) => Promise<void>
-  onCancel?: () => void
-  isLoading?: boolean
+  initialData?: Partial<CounsellorFormData>;
+  onSubmit: (data: CounsellorFormData) => Promise<void>;
+  onCancel?: () => void;
+  isLoading?: boolean;
 }
 
-export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: CounsellorFormProps) {
+export function CounsellorForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: CounsellorFormProps) {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
     initialData?.specialties || []
-  )
+  );
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(
-    initialData?.languages || ['English']
-  )
+    initialData?.languages || ["English"]
+  );
   const [qualifications, setQualifications] = useState<string[]>(
     initialData?.qualifications || []
-  )
-  const [newQualification, setNewQualification] = useState('')
+  );
+  const [newQualification, setNewQualification] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CounsellorFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<CounsellorFormData>({
     defaultValues: {
-      name: initialData?.name || '',
-      email: initialData?.email || '',
-      phone: initialData?.phone || '',
-      bio: initialData?.bio || '',
-      avatar_url: initialData?.avatar_url || '',
-      experience: initialData?.experience || '',
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      bio: initialData?.bio || "",
+      avatar_url: initialData?.avatar_url || "",
+      experience: initialData?.experience || "",
+      experience_years: initialData?.experience_years || 0,
+      gender: initialData?.gender || "Male",
       is_active: initialData?.is_active ?? true,
       is_verified: initialData?.is_verified ?? false,
-      status: initialData?.status || 'pending',
+      status: initialData?.status || "pending",
       specialties: initialData?.specialties || [],
-      languages: initialData?.languages || ['English'],
-      qualifications: initialData?.qualifications || []
-    }
-  })
+      languages: initialData?.languages || ["English"],
+      qualifications: initialData?.qualifications || [],
+    },
+  });
 
   const toggleSpecialty = (specialty: string) => {
     const updated = selectedSpecialties.includes(specialty)
-      ? selectedSpecialties.filter(s => s !== specialty)
-      : [...selectedSpecialties, specialty]
-    setSelectedSpecialties(updated)
-    setValue('specialties', updated)
-  }
+      ? selectedSpecialties.filter((s) => s !== specialty)
+      : [...selectedSpecialties, specialty];
+    setSelectedSpecialties(updated);
+    setValue("specialties", updated);
+  };
 
   const addQualification = () => {
     if (newQualification.trim()) {
-      const updated = [...qualifications, newQualification.trim()]
-      setQualifications(updated)
-      setValue('qualifications', updated)
-      setNewQualification('')
+      const updated = [...qualifications, newQualification.trim()];
+      setQualifications(updated);
+      setValue("qualifications", updated);
+      setNewQualification("");
     }
-  }
+  };
 
   const removeQualification = (index: number) => {
-    const updated = qualifications.filter((_, i) => i !== index)
-    setQualifications(updated)
-    setValue('qualifications', updated)
-  }
+    const updated = qualifications.filter((_, i) => i !== index);
+    setQualifications(updated);
+    setValue("qualifications", updated);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "fafa-counsellors");
+      setValue("avatar_url", url);
+    } catch (error: any) {
+      alert(error.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleFormSubmit = async (data: CounsellorFormData) => {
     await onSubmit({
       ...data,
       specialties: selectedSpecialties,
       languages: selectedLanguages,
-      qualifications
-    })
-  }
+      qualifications,
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Basic Information</h3>
-        
+
         <div>
           <Label htmlFor="name">Name *</Label>
           <Input
             id="name"
-            {...register('name', { required: 'Name is required' })}
+            {...register("name", { required: "Name is required" })}
             placeholder="Dr. Jane Doe"
           />
           {errors.name && (
@@ -108,7 +144,7 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
             <Input
               id="email"
               type="email"
-              {...register('email')}
+              {...register("email")}
               placeholder="jane@example.com"
             />
           </div>
@@ -117,7 +153,7 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
             <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
-              {...register('phone')}
+              {...register("phone")}
               placeholder="+233 XX XXX XXXX"
             />
           </div>
@@ -127,19 +163,78 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
           <Label htmlFor="bio">Bio</Label>
           <Textarea
             id="bio"
-            {...register('bio')}
+            {...register("bio")}
             placeholder="Brief professional biography..."
             rows={4}
           />
         </div>
 
         <div>
-          <Label htmlFor="avatar_url">Avatar URL</Label>
+          <Label>Avatar Image</Label>
+          <div className="flex items-center gap-4 mt-2">
+            <div className="relative h-20 w-20 rounded-full bg-muted overflow-hidden flex items-center justify-center border">
+              {watch("avatar_url") ? (
+                <Image
+                  src={watch("avatar_url")!}
+                  alt="Avatar preview"
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <Upload className="h-8 w-8 text-muted-foreground" />
+              )}
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                disabled={uploading}
+                className="hidden"
+                id="avatar-upload"
+              />
+              <Label
+                htmlFor="avatar-upload"
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer ${
+                  uploading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {uploading ? "Uploading..." : "Choose Image"}
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Max size 2MB. Recommended: Square image.
+              </p>
+            </div>
+          </div>
           <Input
-            id="avatar_url"
-            {...register('avatar_url')}
-            placeholder="https://example.com/avatar.jpg"
+            {...register("avatar_url")}
+            className="mt-2"
+            placeholder="Or enter image URL manually..."
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="gender">Gender</Label>
+            <Select
+              value={watch("gender") || "Male"}
+              onValueChange={(value) => setValue("gender", value as any)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -167,17 +262,33 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
             ))}
           </div>
           {selectedSpecialties.length === 0 && (
-            <p className="text-sm text-red-500 mt-1">At least one specialty is required</p>
+            <p className="text-sm text-red-500 mt-1">
+              At least one specialty is required
+            </p>
           )}
         </div>
 
-        <div>
-          <Label htmlFor="experience">Experience</Label>
-          <Input
-            id="experience"
-            {...register('experience')}
-            placeholder="10+ Years"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="experience">Experience (Title)</Label>
+            <Input
+              id="experience"
+              {...register("experience")}
+              placeholder="10+ Years"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="experience_years">
+              Years of Experience (Filter)
+            </Label>
+            <Input
+              id="experience_years"
+              type="number"
+              {...register("experience_years", { valueAsNumber: true })}
+              placeholder="10"
+            />
+          </div>
         </div>
 
         <div>
@@ -202,9 +313,9 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
                 onChange={(e) => setNewQualification(e.target.value)}
                 placeholder="Add qualification..."
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addQualification()
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addQualification();
                   }
                 }}
               />
@@ -223,8 +334,10 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
         <div>
           <Label htmlFor="status">Status</Label>
           <Select
-            value={watch('status')}
-            onValueChange={(value) => setValue('status', value as CounsellorStatus)}
+            value={watch("status")}
+            onValueChange={(value) =>
+              setValue("status", value as CounsellorStatus)
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -241,8 +354,10 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
         <div className="flex items-center space-x-2">
           <Checkbox
             id="is_active"
-            checked={watch('is_active')}
-            onCheckedChange={(checked) => setValue('is_active', checked as boolean)}
+            checked={watch("is_active")}
+            onCheckedChange={(checked) =>
+              setValue("is_active", checked as boolean)
+            }
           />
           <Label htmlFor="is_active" className="cursor-pointer">
             Account Active
@@ -252,8 +367,10 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
         <div className="flex items-center space-x-2">
           <Checkbox
             id="is_verified"
-            checked={watch('is_verified')}
-            onCheckedChange={(checked) => setValue('is_verified', checked as boolean)}
+            checked={watch("is_verified")}
+            onCheckedChange={(checked) =>
+              setValue("is_verified", checked as boolean)
+            }
           />
           <Label htmlFor="is_verified" className="cursor-pointer">
             Verified Counsellor
@@ -268,10 +385,17 @@ export function CounsellorForm({ initialData, onSubmit, onCancel, isLoading }: C
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isLoading || selectedSpecialties.length === 0}>
-          {isLoading ? 'Saving...' : initialData ? 'Update Counsellor' : 'Create Counsellor'}
+        <Button
+          type="submit"
+          disabled={isLoading || selectedSpecialties.length === 0}
+        >
+          {isLoading
+            ? "Saving..."
+            : initialData
+            ? "Update Counsellor"
+            : "Create Counsellor"}
         </Button>
       </div>
     </form>
-  )
+  );
 }

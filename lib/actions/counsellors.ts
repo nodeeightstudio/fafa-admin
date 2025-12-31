@@ -118,8 +118,10 @@ export async function createCounsellor(formData: CounsellorFormData) {
       avatar_url: formData.avatar_url || null,
       specialties: formData.specialties,
       experience: formData.experience || null,
+      experience_years: formData.experience_years || 0,
       qualifications: formData.qualifications || [],
       languages: formData.languages || ["English"],
+      gender: formData.gender || null,
       is_active: formData.is_active ?? true,
       is_verified: formData.is_verified ?? false,
       status: formData.status || "pending",
@@ -165,10 +167,13 @@ export async function updateCounsellor(
     updateData.specialties = formData.specialties;
   if (formData.experience !== undefined)
     updateData.experience = formData.experience;
+  if (formData.experience_years !== undefined)
+    updateData.experience_years = formData.experience_years;
   if (formData.qualifications !== undefined)
     updateData.qualifications = formData.qualifications;
   if (formData.languages !== undefined)
     updateData.languages = formData.languages;
+  if (formData.gender !== undefined) updateData.gender = formData.gender;
   if (formData.is_active !== undefined)
     updateData.is_active = formData.is_active;
   if (formData.is_verified !== undefined)
