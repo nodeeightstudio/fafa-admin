@@ -108,6 +108,25 @@ export async function createCounsellor(formData: CounsellorFormData) {
     );
   }
 
+  // ... existing code ...
+
+  // Try to find a user profile with the given email to link
+  let profileId: string | null = null;
+
+  if (formData.email) {
+    const { data: userData, error: userError } = await supabase.rpc(
+      "get_user_by_email",
+      { email_input: formData.email }
+    );
+
+    if (!userError && userData && userData.length > 0) {
+      profileId = userData[0].id;
+      console.log("✅ Found matching profile:", profileId);
+    } else {
+      console.log("⚠️ No matching profile found for email:", formData.email);
+    }
+  }
+
   const { data, error } = await supabase
     .from("counsellors")
     .insert({
@@ -125,9 +144,18 @@ export async function createCounsellor(formData: CounsellorFormData) {
       is_active: formData.is_active ?? true,
       is_verified: formData.is_verified ?? false,
       status: formData.status || "pending",
+      profile_id: profileId, // Link to profile if found
     })
     .select()
     .single();
+
+  // After creation, if linked, ensuring the profile has the counselor flag set
+  if (profileId) {
+    await supabase.rpc("set_counselor_role", {
+      target_user_id: profileId,
+      is_counselor_val: true,
+    });
+  }
 
   if (error) {
     console.error("❌ Insert error:", {

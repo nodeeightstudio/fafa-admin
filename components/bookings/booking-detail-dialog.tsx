@@ -1,67 +1,83 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { BookingWithDetails } from '@/types/booking'
+import { useState } from "react";
+import { BookingWithDetails } from "@/types/booking";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { format } from 'date-fns'
-import { Calendar, Clock, User, Mail, Video, MessageSquare, Phone } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import {
+  Calendar,
+  Clock,
+  User,
+  Mail,
+  Video,
+  MessageSquare,
+  Phone,
+} from "lucide-react";
 
 interface BookingDetailDialogProps {
-  booking: BookingWithDetails | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUpdateStatus: (bookingId: string, status: string, reason?: string) => Promise<void>
+  booking: BookingWithDetails | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdateStatus: (
+    bookingId: string,
+    status: string,
+    reason?: string
+  ) => Promise<void>;
 }
 
 export function BookingDetailDialog({
   booking,
   open,
   onOpenChange,
-  onUpdateStatus
+  onUpdateStatus,
 }: BookingDetailDialogProps) {
-  const [cancellationReason, setCancellationReason] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (!booking) return null
+  if (!booking) return null;
 
   const handleStatusUpdate = async (status: string) => {
-    setLoading(true)
-    await onUpdateStatus(booking.id, status, status === 'cancelled' ? cancellationReason : undefined)
-    setLoading(false)
-    setCancellationReason('')
-  }
+    setLoading(true);
+    await onUpdateStatus(
+      booking.id,
+      status,
+      status === "cancelled" ? cancellationReason : undefined
+    );
+    setLoading(false);
+    setCancellationReason("");
+  };
 
   const getSessionIcon = (type: string) => {
     switch (type) {
-      case 'video':
-        return <Video className="h-5 w-5" />
-      case 'chat':
-        return <MessageSquare className="h-5 w-5" />
-      case 'online':
-        return <Phone className="h-5 w-5" />
+      case "video":
+        return <Video className="h-5 w-5" />;
+      case "chat":
+        return <MessageSquare className="h-5 w-5" />;
+      case "online":
+        return <Phone className="h-5 w-5" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const counsellorInitials = booking.counsellor.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,11 +101,17 @@ export function BookingDetailDialog({
               <div>
                 <p className="font-medium">{booking.counsellor.name}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {booking.counsellor.specialties.slice(0, 3).map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="text-xs">
-                      {specialty}
-                    </Badge>
-                  ))}
+                  {booking.counsellor.specialties
+                    .slice(0, 3)
+                    .map((specialty) => (
+                      <Badge
+                        key={specialty}
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {specialty}
+                      </Badge>
+                    ))}
                 </div>
               </div>
             </div>
@@ -103,7 +125,7 @@ export function BookingDetailDialog({
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{booking.user.full_name || 'N/A'}</span>
+                <span>{booking.user.full_name || "N/A"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
@@ -123,7 +145,7 @@ export function BookingDetailDialog({
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
                   <p className="font-medium">
-                    {format(new Date(booking.scheduled_at), 'MMM dd, yyyy')}
+                    {format(new Date(booking.scheduled_at), "MMM dd, yyyy")}
                   </p>
                 </div>
               </div>
@@ -132,7 +154,7 @@ export function BookingDetailDialog({
                 <div>
                   <p className="text-xs text-muted-foreground">Time</p>
                   <p className="font-medium">
-                    {format(new Date(booking.scheduled_at), 'h:mm a')}
+                    {format(new Date(booking.scheduled_at), "h:mm a")}
                   </p>
                 </div>
               </div>
@@ -140,7 +162,9 @@ export function BookingDetailDialog({
                 {getSessionIcon(booking.session_type)}
                 <div>
                   <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="font-medium capitalize">{booking.session_type}</p>
+                  <p className="font-medium capitalize">
+                    {booking.session_type}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -174,15 +198,21 @@ export function BookingDetailDialog({
           </div>
 
           {/* Cancellation Info */}
-          {booking.status === 'cancelled' && booking.cancellation_reason && (
+          {booking.status === "cancelled" && booking.cancellation_reason && (
             <>
               <Separator />
               <div>
                 <h3 className="font-semibold mb-2">Cancellation Reason</h3>
-                <p className="text-sm text-muted-foreground">{booking.cancellation_reason}</p>
+                <p className="text-sm text-muted-foreground">
+                  {booking.cancellation_reason}
+                </p>
                 {booking.cancelled_at && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Cancelled on {format(new Date(booking.cancelled_at), 'MMM dd, yyyy h:mm a')}
+                    Cancelled on{" "}
+                    {format(
+                      new Date(booking.cancelled_at),
+                      "MMM dd, yyyy h:mm a"
+                    )}
                   </p>
                 )}
               </div>
@@ -190,14 +220,14 @@ export function BookingDetailDialog({
           )}
 
           {/* Actions */}
-          {booking.status === 'pending' && (
+          {booking.status === "pending" && (
             <>
               <Separator />
               <div className="space-y-3">
                 <h3 className="font-semibold">Actions</h3>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => handleStatusUpdate('confirmed')}
+                    onClick={() => handleStatusUpdate("confirmed")}
                     disabled={loading}
                     className="flex-1"
                   >
@@ -208,7 +238,7 @@ export function BookingDetailDialog({
             </>
           )}
 
-          {(booking.status === 'pending' || booking.status === 'confirmed') && (
+          {(booking.status === "pending" || booking.status === "confirmed") && (
             <>
               <div className="space-y-3">
                 <Label htmlFor="cancellation_reason">Cancel Booking</Label>
@@ -221,7 +251,7 @@ export function BookingDetailDialog({
                 />
                 <Button
                   variant="destructive"
-                  onClick={() => handleStatusUpdate('cancelled')}
+                  onClick={() => handleStatusUpdate("cancelled")}
                   disabled={loading || !cancellationReason.trim()}
                   className="w-full"
                 >
@@ -233,5 +263,5 @@ export function BookingDetailDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
