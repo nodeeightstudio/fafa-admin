@@ -17,6 +17,8 @@ export interface Counsellor {
   is_active: boolean;
   is_verified: boolean;
   status: CounsellorStatus;
+  tier: number;
+  profile_id: string | null;
   average_rating: number;
   total_reviews: number;
   total_sessions: number;
@@ -52,6 +54,7 @@ export interface CounsellorFormData {
   is_active: boolean;
   is_verified: boolean;
   status: CounsellorStatus;
+  tier?: number;
 }
 
 export interface AvailabilitySlot {

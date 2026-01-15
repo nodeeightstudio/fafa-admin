@@ -71,6 +71,7 @@ export function CounsellorForm({
       is_active: initialData?.is_active ?? true,
       is_verified: initialData?.is_verified ?? false,
       status: initialData?.status || "pending",
+      tier: initialData?.tier || 0,
       specialties: initialData?.specialties || [],
       languages: initialData?.languages || ["English"],
       qualifications: initialData?.qualifications || [],
@@ -359,6 +360,24 @@ export function CounsellorForm({
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="tier">Tier</Label>
+          <Select
+            value={String(watch("tier") || 0)}
+            onValueChange={(value) => setValue("tier", parseInt(value))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Standard (Tier 0)</SelectItem>
+              <SelectItem value="1">Verified (Tier 1)</SelectItem>
+              <SelectItem value="2">Premium (Tier 2)</SelectItem>
+              <SelectItem value="3">Elite (Tier 3)</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -144,6 +144,7 @@ export async function createCounsellor(formData: CounsellorFormData) {
       is_active: formData.is_active ?? true,
       is_verified: formData.is_verified ?? false,
       status: formData.status || "pending",
+      tier: formData.tier || 0,
       profile_id: profileId, // Link to profile if found
     })
     .select()
@@ -207,6 +208,7 @@ export async function updateCounsellor(
   if (formData.is_verified !== undefined)
     updateData.is_verified = formData.is_verified;
   if (formData.status !== undefined) updateData.status = formData.status;
+  if (formData.tier !== undefined) updateData.tier = formData.tier;
 
   const { data, error } = await supabase
     .from("counsellors")
