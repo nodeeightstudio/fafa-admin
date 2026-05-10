@@ -22,6 +22,7 @@ interface SnapshotStats {
   completed_sessions: number
   safety_score: number
   support_score: number
+  retention_rate: number
 }
 
 export function OverviewSnapshot() {
@@ -103,7 +104,7 @@ export function OverviewSnapshot() {
     },
     {
       title: 'Retention (30D)',
-      value: getExternal('retention_rate'),
+      value: `${stats.retention_rate}%`,
       description: 'Based on cohorts',
       icon: TrendingUp,
       color: 'text-cyan-500'

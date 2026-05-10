@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 
 interface MonthlyStat {
   metric_name: string
@@ -23,13 +24,23 @@ interface MonthlyStat {
 export function DashboardTracker() {
   const [stats, setStats] = useState<MonthlyStat[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Calculate the last 3 months dynamically
+  const months = [
+    subMonths(new Date(), 2),
+    subMonths(new Date(), 1),
+    new Date()
+  ].map(d => format(d, 'MMMM'))
 
   useEffect(() => {
     async function fetchMonthlyStats() {
-      // Define the range for the tracker (e.g., April to June 2026)
+      // Fetch data for the last 3 months
+      const startDate = startOfMonth(subMonths(new Date(), 2))
+      const endDate = endOfMonth(new Date())
+
       const { data, error } = await supabase.rpc('get_monthly_tracker_stats', {
-        start_date: '2026-04-01',
-        end_date: '2026-06-30'
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: format(endDate, 'yyyy-MM-dd')
       })
 
       if (error) {
@@ -46,7 +57,7 @@ export function DashboardTracker() {
   const getVal = (metric: string, month: string) => {
     const stat = stats.find(s => 
       s.metric_name === metric && 
-      s.month_val.trim() === month
+      s.month_val.trim().toLowerCase() === month.trim().toLowerCase()
     )
     return stat ? stat.stat_count.toLocaleString() : '0'
   }
@@ -56,18 +67,18 @@ export function DashboardTracker() {
       <TableHeader>
         <TableRow>
           <TableHead className="w-[200px]">Metric</TableHead>
-          <TableHead>April</TableHead>
-          <TableHead>May</TableHead>
-          <TableHead>June</TableHead>
+          {months.map(m => (
+            <TableHead key={m}>{m}</TableHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
         {metrics.map((m) => (
           <TableRow key={m.id}>
             <TableCell className="font-medium">{m.label}</TableCell>
-            <TableCell>{getVal(m.id, 'April')}</TableCell>
-            <TableCell>{getVal(m.id, 'May')}</TableCell>
-            <TableCell>{getVal(m.id, 'June')}</TableCell>
+            {months.map(month => (
+              <TableCell key={month}>{getVal(m.id, month)}</TableCell>
+            ))}
           </TableRow>
         ))}
       </TableBody>
@@ -106,7 +117,8 @@ export function DashboardTracker() {
           <TabsContent value="engagement">
             {renderTable([
               { id: 'posts_created', label: 'Anonymous Posts Created' },
-              { id: 'peer_interactions', label: 'Peer Interactions' }
+              { id: 'peer_interactions', label: 'Peer Interactions' },
+              { id: 'resource_views', label: 'Resource Views' }
             ])}
           </TabsContent>
           
