@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAdminRecord, AdminUser, supabase } from "@/lib/supabase";
+import { Institution } from "@/types/institution";
+import { getInstitutions } from "@/lib/actions/institutions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -41,6 +44,8 @@ const formSchema = z.object({
   urls: z.array(z.string().url("Invalid URL")).optional(),
   content: z.string().optional(),
   image_url: z.string().optional().or(z.literal("")),
+  scope: z.enum(["global", "institution"]),
+  institution_id: z.string().optional().nullable(),
 });
 
 interface ResourceFormProps {
@@ -52,6 +57,26 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
   const [loading, setLoading] = useState(false);
   const [urls, setUrls] = useState<string[]>(initialData?.urls || [""]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [admin, setAdmin] = useState<AdminUser | null>(null);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      const adminRecord = await getAdminRecord();
+      setAdmin(adminRecord);
+      
+      if (adminRecord?.role === 'admin') {
+        const insts = await getInstitutions();
+        setInstitutions(insts);
+      }
+
+      if (adminRecord?.role === 'institution_admin') {
+        form.setValue('scope', 'institution');
+        form.setValue('institution_id', adminRecord.institution_id);
+      }
+    }
+    loadData();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,6 +89,8 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
       urls: initialData?.urls || [],
       content: initialData?.content || "",
       image_url: initialData?.image_url || "",
+      scope: initialData?.scope || "global",
+      institution_id: initialData?.institution_id || null,
     },
   });
 
@@ -318,6 +345,72 @@ export function ResourceForm({ initialData }: ResourceFormProps) {
                         <FormControl>
                           <Input placeholder="https://..." {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Visibility & Scope</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="scope"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Scope</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={admin?.role === 'institution_admin'}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select scope" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="global">Global (All Users)</SelectItem>
+                          <SelectItem value="institution">Institutional (Private)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("scope") === "institution" && (
+                  <FormField
+                    control={form.control}
+                    name="institution_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Institution</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value || undefined}
+                          disabled={admin?.role === 'institution_admin'}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select institution" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {admin?.role === 'institution_admin' ? (
+                                <SelectItem value={admin.institution_id || ""}>Current Institution</SelectItem>
+                            ) : (
+                                institutions.map(inst => (
+                                    <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>
+                                ))
+                            )}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

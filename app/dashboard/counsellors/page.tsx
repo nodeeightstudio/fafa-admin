@@ -35,6 +35,8 @@ import {
 import { CounsellorCard } from '@/components/counsellors/counsellor-card'
 import { CounsellorForm } from '@/components/counsellors/counsellor-form'
 import { getCounsellors, createCounsellor, deleteCounsellor } from '@/lib/actions/counsellors'
+import { getInstitutions } from '@/lib/actions/institutions'
+import { Institution } from '@/types/institution'
 import { Search, Plus } from 'lucide-react'
 
 export default function CounsellorsPage() {
@@ -45,6 +47,7 @@ export default function CounsellorsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [onlineFilter, setOnlineFilter] = useState(false)
+  const [institutions, setInstitutions] = useState<Institution[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -63,6 +66,7 @@ export default function CounsellorsPage() {
         return
       }
 
+      fetchInstitutions()
       fetchCounsellors()
     }
     checkAuth()
@@ -81,6 +85,15 @@ export default function CounsellorsPage() {
       console.error('Error fetching counsellors:', error)
     }
     setLoading(false)
+  }
+
+  const fetchInstitutions = async () => {
+    try {
+      const data = await getInstitutions()
+      setInstitutions(data)
+    } catch (error) {
+      console.error('Error fetching institutions:', error)
+    }
   }
 
   const handleCreateCounsellor = async (formData: any) => {
@@ -154,6 +167,7 @@ export default function CounsellorsPage() {
                 onSubmit={handleCreateCounsellor}
                 onCancel={() => setIsModalOpen(false)}
                 isLoading={formLoading}
+                institutions={institutions}
               />
             </DialogContent>
           </Dialog>

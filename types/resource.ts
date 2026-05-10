@@ -17,6 +17,8 @@ export interface Resource {
   image_url: string | null;
   created_at: string;
   updated_at: string;
+  scope: 'global' | 'institution';
+  institution_id: string | null;
 }
 
 export interface ResourceFormData {
@@ -28,4 +30,6 @@ export interface ResourceFormData {
   urls?: string[];
   content?: string;
   image_url?: string;
+  scope: 'global' | 'institution';
+  institution_id?: string | null;
 }

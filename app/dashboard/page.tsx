@@ -109,6 +109,18 @@ export default function DashboardPage() {
               </Link>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Institutions</CardTitle>
+              <CardDescription>Manage B2B partners</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard/institutions">
+                <Button className="w-full">View Institutions</Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </>

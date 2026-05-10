@@ -25,6 +25,7 @@ export interface Counsellor {
   created_at: string;
   updated_at: string;
   last_active_at: string | null;
+  institution_ids: string[];
 }
 
 export interface CounsellorAvailability {
@@ -55,6 +56,7 @@ export interface CounsellorFormData {
   is_verified: boolean;
   status: CounsellorStatus;
   tier?: number;
+  institution_ids: string[];
 }
 
 export interface AvailabilitySlot {

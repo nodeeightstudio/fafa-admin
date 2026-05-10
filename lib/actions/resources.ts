@@ -10,10 +10,23 @@ export async function getResources(filters?: {
 }) {
   const supabase = await createClient();
 
+  // Get current admin info to enforce scoping
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: adminRecord } = await supabase
+    .from('admins')
+    .select('role, institution_id')
+    .eq('id', user?.id)
+    .single();
+
   let query = supabase
     .from("resources")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // If institution admin, only show resources assigned to their institution or global ones (if allowed)
+  if (adminRecord?.role === 'institution_admin' && adminRecord.institution_id) {
+    query = query.or(`scope.eq.global,and(scope.eq.institution,institution_id.eq.${adminRecord.institution_id})`);
+  }
 
   if (filters?.type && filters.type !== "all") {
     query = query.eq("type", filters.type);
@@ -85,6 +98,8 @@ export async function createResource(formData: ResourceFormData) {
       urls: formData.urls || [],
       content: formData.content || null,
       image_url: formData.image_url || null,
+      scope: formData.scope || 'global',
+      institution_id: formData.institution_id || null,
     })
     .select()
     .single();
@@ -116,6 +131,9 @@ export async function updateResource(
   if (formData.content !== undefined) updateData.content = formData.content;
   if (formData.image_url !== undefined)
     updateData.image_url = formData.image_url;
+  if (formData.scope !== undefined) updateData.scope = formData.scope;
+  if (formData.institution_id !== undefined)
+    updateData.institution_id = formData.institution_id;
 
   const { data, error } = await supabase
     .from("resources")

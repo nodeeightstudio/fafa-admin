@@ -22,12 +22,14 @@ import {
 import { uploadImage } from "@/lib/upload";
 import { Loader2, Upload } from "lucide-react";
 import Image from "next/image";
+import { Institution } from "@/types/institution";
 
 interface CounsellorFormProps {
   initialData?: Partial<CounsellorFormData>;
   onSubmit: (data: CounsellorFormData) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
+  institutions?: Institution[];
 }
 
 export function CounsellorForm({
@@ -35,6 +37,7 @@ export function CounsellorForm({
   onSubmit,
   onCancel,
   isLoading,
+  institutions = [],
 }: CounsellorFormProps) {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
     initialData?.specialties || []
@@ -75,6 +78,7 @@ export function CounsellorForm({
       specialties: initialData?.specialties || [],
       languages: initialData?.languages || ["English"],
       qualifications: initialData?.qualifications || [],
+      institution_ids: initialData?.institution_ids || [],
     },
   });
 
@@ -406,6 +410,37 @@ export function CounsellorForm({
           <Label htmlFor="is_verified" className="cursor-pointer">
             Verified Counsellor
           </Label>
+        </div>
+
+        {/* Institution Assignment */}
+        <div className="space-y-4 pt-4 border-t">
+          <h3 className="text-lg font-semibold">Institutional Access</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {institutions.map((inst) => (
+              <div key={inst.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`inst-${inst.id}`}
+                  checked={watch("institution_ids")?.includes(inst.id)}
+                  onCheckedChange={(checked) => {
+                    const current = watch("institution_ids") || [];
+                    const updated = checked
+                      ? [...current, inst.id]
+                      : current.filter((id) => id !== inst.id);
+                    setValue("institution_ids", updated);
+                  }}
+                />
+                <label
+                  htmlFor={`inst-${inst.id}`}
+                  className="text-sm cursor-pointer"
+                >
+                  {inst.name}
+                </label>
+              </div>
+            ))}
+          </div>
+          {institutions.length === 0 && (
+            <p className="text-xs text-muted-foreground">No institutions available to assign.</p>
+          )}
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Settings,
   Calendar,
+  Building2,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -48,6 +49,11 @@ const data = {
           url: "/dashboard/counsellors/new",
         },
       ],
+    },
+    {
+      title: "Institutions",
+      url: "/dashboard/institutions",
+      icon: Building2,
     },
     {
       title: "Bookings",

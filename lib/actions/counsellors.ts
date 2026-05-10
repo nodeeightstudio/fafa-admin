@@ -11,10 +11,23 @@ export async function getCounsellors(filters?: {
 }) {
   const supabase = await createClient();
 
+  // Get current admin info to enforce scoping
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: adminRecord } = await supabase
+    .from('admins')
+    .select('role, institution_id')
+    .eq('id', user?.id)
+    .single();
+
   let query = supabase
     .from("counsellors")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // If institution admin, only show counsellors assigned to their institution
+  if (adminRecord?.role === 'institution_admin' && adminRecord.institution_id) {
+    query = query.contains('institution_ids', [adminRecord.institution_id]);
+  }
 
   if (filters?.status && filters.status !== "all") {
     query = query.eq("status", filters.status);
@@ -146,6 +159,7 @@ export async function createCounsellor(formData: CounsellorFormData) {
       status: formData.status || "pending",
       tier: formData.tier || 0,
       profile_id: profileId, // Link to profile if found
+      institution_ids: formData.institution_ids || [],
     })
     .select()
     .single();
@@ -209,6 +223,7 @@ export async function updateCounsellor(
     updateData.is_verified = formData.is_verified;
   if (formData.status !== undefined) updateData.status = formData.status;
   if (formData.tier !== undefined) updateData.tier = formData.tier;
+  if (formData.institution_ids !== undefined) updateData.institution_ids = formData.institution_ids;
 
   const { data, error } = await supabase
     .from("counsellors")
