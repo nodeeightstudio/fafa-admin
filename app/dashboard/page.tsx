@@ -16,6 +16,8 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
+import { OverviewSnapshot } from '@/components/overview-snapshot'
+import { DashboardTracker } from '@/components/dashboard-tracker'
 import { StatsCards } from '@/components/stats-cards'
 
 export default function DashboardPage() {
@@ -67,8 +69,9 @@ export default function DashboardPage() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <StatsCards />
+      <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+        <OverviewSnapshot />
+        <DashboardTracker />
 
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
           <Card>
