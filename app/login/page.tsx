@@ -33,10 +33,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Card className="w-full max-w-md border-border shadow-xl">
+        <CardHeader className="flex flex-col items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
+            <img src="/logo.png" alt="FAFA Logo" className="h-12 w-12 object-contain" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-primary tracking-tight">FAFA Admin Login</CardTitle>
           <CardDescription>
             Sign in to access the FAFA Admin Dashboard
           </CardDescription>

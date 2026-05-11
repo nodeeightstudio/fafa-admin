@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { OverviewSnapshot } from '@/components/overview-snapshot'
 import { DashboardTracker } from '@/components/dashboard-tracker'
@@ -48,7 +49,21 @@ export default function DashboardPage() {
   }, [router])
 
   if (!user || !isAdmin) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex flex-1 flex-col gap-6 p-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-8 w-[200px]" />
+          <Skeleton className="h-8 w-[100px]" />
+        </div>
+        <Skeleton className="h-[200px] w-full rounded-xl" />
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-[150px] rounded-xl" />
+          <Skeleton className="h-[150px] rounded-xl" />
+          <Skeleton className="h-[150px] rounded-xl" />
+        </div>
+      </div>
+    )
   }
 
   return (

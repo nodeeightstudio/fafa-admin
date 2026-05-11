@@ -99,11 +99,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Shield className="h-4 w-4" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5">
+            <img src="/logo.png" alt="FAFA Logo" className="h-8 w-8 object-contain" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">FAFA Admin</span>
+            <span className="truncate font-bold text-primary tracking-tight">FAFA Admin</span>
             <span className="truncate text-xs">Dashboard</span>
           </div>
         </div>

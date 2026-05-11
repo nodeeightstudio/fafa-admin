@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Users, FileText, UserCheck, AlertTriangle } from 'lucide-react'
 
 interface Stats {
@@ -73,10 +74,11 @@ export function StatsCards() {
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+              <Skeleton className="h-4 w-[100px]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">-</div>
+              <Skeleton className="h-8 w-[60px] mb-2" />
+              <Skeleton className="h-3 w-[120px]" />
             </CardContent>
           </Card>
         ))}
