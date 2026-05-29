@@ -7,18 +7,18 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 // Function to check if current user is an admin
 export const isUserAdmin = async (): Promise<boolean> => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
+  const record = await getAdminRecord();
+  return !!record;
+};
 
-  const { data, error } = await supabase
-    .from("admins")
-    .select("id")
-    .eq("id", user.id)
-    .single();
+export const isSuperAdmin = async (): Promise<boolean> => {
+  const record = await getAdminRecord();
+  return record?.role === "admin";
+};
 
-  return !error && !!data;
+export const isInstitutionAdmin = async (): Promise<boolean> => {
+  const record = await getAdminRecord();
+  return record?.role === "institution_admin" && !!record.institution_id;
 };
 
 export interface AdminUser {

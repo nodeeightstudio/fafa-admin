@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, isUserAdmin } from '@/lib/supabase'
+import { supabase, isUserAdmin, isInstitutionAdmin } from '@/lib/supabase'
 import { Institution } from '@/types/institution'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +27,12 @@ import {
 import { Plus } from 'lucide-react'
 import { InstitutionCard } from '@/components/institutions/institution-card'
 import { InstitutionForm } from '@/components/institutions/institution-form'
-import { getInstitutions, createInstitution, deleteInstitution } from '@/lib/actions/institutions'
+import {
+  approveInstitution,
+  createInstitution,
+  deleteInstitution,
+  getInstitutions,
+} from '@/lib/actions/institutions'
 
 export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -49,6 +54,12 @@ export default function InstitutionsPage() {
         alert('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
+        return
+      }
+
+      const instAdmin = await isInstitutionAdmin()
+      if (instAdmin) {
+        router.replace('/dashboard/institution')
         return
       }
 
@@ -90,6 +101,19 @@ export default function InstitutionsPage() {
       await fetchInstitutions()
     } catch (error: any) {
       alert(error.message || 'Failed to delete institution')
+    }
+  }
+
+  const handleApproveInstitution = async (id: string) => {
+    if (!confirm('Approve this institution and generate its join code?')) {
+      return
+    }
+
+    try {
+      await approveInstitution(id)
+      await fetchInstitutions()
+    } catch (error: any) {
+      alert(error.message || 'Failed to approve institution')
     }
   }
 
@@ -165,6 +189,7 @@ export default function InstitutionsPage() {
                 key={institution.id}
                 institution={institution}
                 onDelete={handleDeleteInstitution}
+                onApprove={handleApproveInstitution}
               />
             ))}
           </div>

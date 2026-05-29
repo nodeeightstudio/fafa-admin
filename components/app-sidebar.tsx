@@ -9,7 +9,10 @@ import {
   Settings,
   Calendar,
   Building2,
+  Megaphone,
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -20,81 +23,96 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { getAdminRecord, AdminUser } from "@/lib/supabase"
 
-// Sample data for admin dashboard
-const data = {
-  user: {
-    name: "Admin User",
-    email: "admin@fafa.com",
-    avatar: "/avatars/admin.jpg",
+const superAdminNav = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
+    isActive: true,
   },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      isActive: true,
-    },
-    {
-      title: "Counsellors",
-      url: "/dashboard/counsellors",
-      icon: Users,
-      items: [
-        {
-          title: "All Counsellors",
-          url: "/dashboard/counsellors",
-        },
-        {
-          title: "Add New",
-          url: "/dashboard/counsellors/new",
-        },
-      ],
-    },
-    {
-      title: "Institutions",
-      url: "/dashboard/institutions",
-      icon: Building2,
-    },
-    {
-      title: "Bookings",
-      url: "/dashboard/bookings",
-      icon: Calendar,
-    },
-    {
-      title: "Resources",
-      url: "/dashboard/resources",
-      icon: BookOpen,
-      items: [
-        {
-          title: "All Resources",
-          url: "/dashboard/resources",
-        },
-        {
-          title: "Add New",
-          url: "/dashboard/resources/new",
-        },
-      ],
-    },
-    {
-      title: "Moderation",
-      url: "/dashboard/reports",
-      icon: Shield,
-      items: [
-        {
-          title: "Reports",
-          url: "/dashboard/reports",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: Settings,
-    },
-  ],
-}
+  {
+    title: "Counsellors",
+    url: "/dashboard/counsellors",
+    icon: Users,
+    items: [
+      { title: "All Counsellors", url: "/dashboard/counsellors" },
+      { title: "Add New", url: "/dashboard/counsellors/new" },
+    ],
+  },
+  {
+    title: "Institutions",
+    url: "/dashboard/institutions",
+    icon: Building2,
+  },
+  {
+    title: "Bookings",
+    url: "/dashboard/bookings",
+    icon: Calendar,
+  },
+  {
+    title: "Broadcasts",
+    url: "/dashboard/broadcasts",
+    icon: Megaphone,
+  },
+  {
+    title: "Resources",
+    url: "/dashboard/resources",
+    icon: BookOpen,
+    items: [
+      { title: "All Resources", url: "/dashboard/resources" },
+      { title: "Add New", url: "/dashboard/resources/new" },
+    ],
+  },
+  {
+    title: "Moderation",
+    url: "/dashboard/reports",
+    icon: Shield,
+    items: [{ title: "Reports", url: "/dashboard/reports" }],
+  },
+  {
+    title: "Settings",
+    url: "/dashboard/settings",
+    icon: Settings,
+  },
+]
+
+const institutionAdminNav = [
+  {
+    title: "Institution",
+    url: "/dashboard/institution",
+    icon: Building2,
+    isActive: true,
+  },
+  {
+    title: "Resources",
+    url: "/dashboard/resources",
+    icon: BookOpen,
+  },
+  {
+    title: "Counsellors",
+    url: "/dashboard/counsellors",
+    icon: Users,
+  },
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [admin, setAdmin] = useState<AdminUser | null>(null)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    getAdminRecord().then(setAdmin)
+  }, [])
+
+  const navItems =
+    admin?.role === "institution_admin" ? institutionAdminNav : superAdminNav
+
+  const itemsWithActive = navItems.map((item) => ({
+    ...item,
+    isActive: pathname === item.url || pathname.startsWith(item.url + "/"),
+  }))
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -104,15 +122,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-bold text-primary tracking-tight">FAFA Admin</span>
-            <span className="truncate text-xs">Dashboard</span>
+            <span className="truncate text-xs">
+              {admin?.role === "institution_admin" ? "Institution" : "Dashboard"}
+            </span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={itemsWithActive} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: admin?.role === "institution_admin" ? "Institution Admin" : "Admin User",
+            email: "admin@fafa.com",
+            avatar: "/avatars/admin.jpg",
+          }}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

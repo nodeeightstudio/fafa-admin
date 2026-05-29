@@ -22,6 +22,15 @@ export async function createInstitution(institution: Omit<Institution, 'id' | 'c
   return data as Institution
 }
 
+export async function approveInstitution(id: string) {
+  const { data, error } = await supabase.rpc('approve_institution', {
+    p_institution_id: id,
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function deleteInstitution(id: string) {
   const { error } = await supabase
     .from('institutions')

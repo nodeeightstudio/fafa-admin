@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, isUserAdmin } from '@/lib/supabase'
+import { supabase, isUserAdmin, isInstitutionAdmin } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -39,6 +39,12 @@ export default function DashboardPage() {
         alert('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
+        return
+      }
+
+      const instAdmin = await isInstitutionAdmin()
+      if (instAdmin) {
+        router.replace('/dashboard/institution')
         return
       }
 
