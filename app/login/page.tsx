@@ -70,16 +70,25 @@ export default function LoginPage() {
     setGoogleLoading(true)
     setErrorMessage('')
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        queryParams: {
+          prompt: 'select_account',
+        },
+        skipBrowserRedirect: true,
       },
     })
 
     if (error) {
       setErrorMessage(error.message)
       setGoogleLoading(false)
+      return
+    }
+
+    if (data.url) {
+      window.location.assign(data.url)
     }
   }
 
