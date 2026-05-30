@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
 import { supabase, isUserAdmin } from '@/lib/supabase'
 import { BookingWithDetails } from '@/types/booking'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,10 +18,63 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookingCard } from '@/components/bookings/booking-card'
 import { BookingDetailDialog } from '@/components/bookings/booking-detail-dialog'
 import { getBookings, updateBookingStatus } from '@/lib/actions/bookings'
-import { Calendar } from 'lucide-react'
+import { Calendar, MessageSquare, Phone, Video } from 'lucide-react'
+import { DataTable } from '@/components/data-table/data-table'
+import { StatusBadge } from '@/components/data-table/status-badge'
+import { RowActions } from '@/components/data-table/row-actions'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function getSessionIcon(type: string) {
+  switch (type) {
+    case 'video':
+      return <Video className="h-4 w-4" />
+    case 'chat':
+      return <MessageSquare className="h-4 w-4" />
+    case 'online':
+      return <Phone className="h-4 w-4" />
+    default:
+      return null
+  }
+}
+
+function StatCard({
+  label,
+  value,
+  loading,
+  valueClassName,
+}: {
+  label: string
+  value: number
+  loading: boolean
+  valueClassName?: string
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardDescription>{label}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-12" />
+        ) : (
+          <div className={`text-2xl font-bold ${valueClassName ?? ''}`}>{value}</div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<BookingWithDetails[]>([])
@@ -55,7 +109,7 @@ export default function BookingsPage() {
     setLoading(true)
     try {
       const data = await getBookings({
-        status: activeTab !== 'all' ? activeTab : undefined
+        status: activeTab !== 'all' ? activeTab : undefined,
       })
       setBookings(data)
     } catch (error) {
@@ -79,33 +133,75 @@ export default function BookingsPage() {
     }
   }
 
-  const getBookingCounts = () => {
-    return {
-      all: bookings.length,
-      pending: bookings.filter(b => b.status === 'pending').length,
-      confirmed: bookings.filter(b => b.status === 'confirmed').length,
-      completed: bookings.filter(b => b.status === 'completed').length,
-      cancelled: bookings.filter(b => b.status === 'cancelled').length,
-    }
+  const counts = {
+    all: bookings.length,
+    pending: bookings.filter((b) => b.status === 'pending').length,
+    confirmed: bookings.filter((b) => b.status === 'confirmed').length,
+    completed: bookings.filter((b) => b.status === 'completed').length,
+    cancelled: bookings.filter((b) => b.status === 'cancelled').length,
   }
 
-  const counts = getBookingCounts()
+  const columns = useMemo(
+    () => [
+      {
+        id: 'session',
+        header: 'Session',
+        cell: (booking: BookingWithDetails) => (
+          <div className="flex items-center gap-3 min-w-[240px]">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={booking.counsellor.avatar_url || undefined} />
+              <AvatarFallback>{getInitials(booking.counsellor.name)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium leading-none">{booking.counsellor.name}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                with {booking.user.full_name || booking.user.email}
+              </p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'type',
+        header: 'Type',
+        cell: (booking: BookingWithDetails) => (
+          <div className="flex items-center gap-2 text-sm capitalize">
+            {getSessionIcon(booking.session_type)}
+            {booking.session_type} · {booking.duration}m
+          </div>
+        ),
+      },
+      {
+        id: 'scheduled',
+        header: 'Scheduled',
+        cell: (booking: BookingWithDetails) => (
+          <div className="text-sm">
+            <p>{format(new Date(booking.scheduled_at), 'MMM d, yyyy')}</p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(booking.scheduled_at), 'h:mm a')}
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: (booking: BookingWithDetails) => <StatusBadge status={booking.status} />,
+      },
+    ],
+    []
+  )
 
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
@@ -118,58 +214,44 @@ export default function BookingsPage() {
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Bookings</h1>
+          <div>
+            <h1 className="text-3xl font-bold">Bookings</h1>
+            <p className="text-muted-foreground">Track and manage counselling sessions</p>
+          </div>
           <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="mr-2 h-4 w-4" />
             Export
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{counts.all}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Pending</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{counts.pending}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Confirmed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{counts.confirmed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Completed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{counts.completed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Cancelled</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{counts.cancelled}</div>
-            </CardContent>
-          </Card>
+          <StatCard label="Total" value={counts.all} loading={loading} />
+          <StatCard
+            label="Pending"
+            value={counts.pending}
+            loading={loading}
+            valueClassName="text-yellow-600"
+          />
+          <StatCard
+            label="Confirmed"
+            value={counts.confirmed}
+            loading={loading}
+            valueClassName="text-green-600"
+          />
+          <StatCard
+            label="Completed"
+            value={counts.completed}
+            loading={loading}
+            valueClassName="text-blue-600"
+          />
+          <StatCard
+            label="Cancelled"
+            value={counts.cancelled}
+            loading={loading}
+            valueClassName="text-red-600"
+          />
         </div>
 
-        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
@@ -180,39 +262,54 @@ export default function BookingsPage() {
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
-            {loading ? (
-              <div className="text-center py-8">Loading bookings...</div>
-            ) : bookings.length === 0 ? (
-              <Card>
-                <CardContent className="py-8">
-                  <div className="text-center">
-                    <p className="text-muted-foreground">No bookings found</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {activeTab === 'all' 
-                        ? 'Bookings will appear here once users start booking sessions'
-                        : `No ${activeTab} bookings at the moment`
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {bookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    onViewDetails={handleViewDetails}
-                    onUpdateStatus={handleUpdateStatus}
-                  />
-                ))}
-              </div>
-            )}
+            <DataTable
+              title="Booking Sessions"
+              description={
+                activeTab === 'all'
+                  ? 'All scheduled and completed counselling sessions.'
+                  : `Showing ${activeTab.replace('_', ' ')} bookings.`
+              }
+              loading={loading}
+              data={bookings}
+              columns={columns}
+              getRowId={(row) => row.id}
+              emptyTitle="No bookings found"
+              emptyDescription={
+                activeTab === 'all'
+                  ? 'Bookings will appear here once users start booking sessions.'
+                  : `No ${activeTab} bookings at the moment.`
+              }
+              actions={(booking) => (
+                <RowActions
+                  actions={[
+                    {
+                      label: 'View details',
+                      onClick: () => handleViewDetails(booking),
+                    },
+                    ...(booking.status === 'pending'
+                      ? [
+                          {
+                            label: 'Confirm',
+                            onClick: () => handleUpdateStatus(booking.id, 'confirmed'),
+                          },
+                        ]
+                      : []),
+                    ...(booking.status === 'confirmed'
+                      ? [
+                          {
+                            label: 'Mark completed',
+                            onClick: () => handleUpdateStatus(booking.id, 'completed'),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              )}
+            />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Booking Detail Dialog */}
       <BookingDetailDialog
         booking={selectedBooking}
         open={isDetailDialogOpen}

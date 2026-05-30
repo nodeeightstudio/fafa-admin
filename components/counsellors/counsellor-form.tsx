@@ -378,7 +378,7 @@ export function CounsellorForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Standard (Tier 0)</SelectItem>
+              <SelectItem value="0">Peer Counsellor (Tier 0)</SelectItem>
               <SelectItem value="1">Verified (Tier 1)</SelectItem>
               <SelectItem value="2">Premium (Tier 2)</SelectItem>
               <SelectItem value="3">Elite (Tier 3)</SelectItem>
