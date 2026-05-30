@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { ensureSuperAdminAccess, supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,6 +49,8 @@ export default function LoginPage() {
         return
       }
 
+      await ensureSuperAdminAccess()
+
       const { data: admin } = await supabase
         .from('admins')
         .select('id')
@@ -73,7 +75,7 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
           prompt: 'select_account',
         },

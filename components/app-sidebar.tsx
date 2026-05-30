@@ -23,7 +23,13 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { getAdminRecord, AdminUser } from "@/lib/supabase"
+import { getAdminRecord, AdminUser, supabase } from "@/lib/supabase"
+
+interface SidebarUser {
+  name: string
+  email: string
+  avatar: string
+}
 
 const superAdminNav = [
   {
@@ -99,10 +105,41 @@ const institutionAdminNav = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [admin, setAdmin] = useState<AdminUser | null>(null)
+  const [sidebarUser, setSidebarUser] = useState<SidebarUser>({
+    name: "Loading...",
+    email: "",
+    avatar: "",
+  })
   const pathname = usePathname()
 
   useEffect(() => {
-    getAdminRecord().then(setAdmin)
+    async function loadUser() {
+      const [
+        adminRecord,
+        {
+          data: { user },
+        },
+      ] = await Promise.all([getAdminRecord(), supabase.auth.getUser()])
+
+      setAdmin(adminRecord)
+
+      const metadata = user?.user_metadata || {}
+      const email = user?.email || adminRecord?.email || ""
+      const displayName =
+        metadata.full_name ||
+        metadata.name ||
+        adminRecord?.email?.split("@")[0] ||
+        email.split("@")[0] ||
+        "Admin"
+
+      setSidebarUser({
+        name: displayName,
+        email,
+        avatar: metadata.avatar_url || metadata.picture || "",
+      })
+    }
+
+    loadUser()
   }, [])
 
   const navItems =
@@ -134,9 +171,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser
           user={{
-            name: admin?.role === "institution_admin" ? "Institution Admin" : "Admin User",
-            email: "admin@fafa.com",
-            avatar: "/avatars/admin.jpg",
+            name: sidebarUser.name,
+            email: sidebarUser.email,
+            avatar: sidebarUser.avatar,
           }}
         />
       </SidebarFooter>

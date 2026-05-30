@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, isUserAdmin, isInstitutionAdmin } from '@/lib/supabase'
 import { Institution } from '@/types/institution'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,8 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { InstitutionCard } from '@/components/institutions/institution-card'
+import { Plus, Building2 } from 'lucide-react'
 import { InstitutionForm } from '@/components/institutions/institution-form'
 import {
   approveInstitution,
@@ -33,6 +31,9 @@ import {
   deleteInstitution,
   getInstitutions,
 } from '@/lib/actions/institutions'
+import { DataTable } from '@/components/data-table/data-table'
+import { StatusBadge } from '@/components/data-table/status-badge'
+import { RowActions } from '@/components/data-table/row-actions'
 
 export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -117,21 +118,86 @@ export default function InstitutionsPage() {
     }
   }
 
+  const columns = useMemo(
+    () => [
+      {
+        id: 'institution',
+        header: 'Institution',
+        cell: (institution: Institution) => (
+          <div className="flex items-center gap-3 min-w-[220px]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              {institution.logo_url ? (
+                <img
+                  src={institution.logo_url}
+                  alt={institution.name}
+                  className="h-full w-full rounded-lg object-cover"
+                />
+              ) : (
+                <Building2 className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <div>
+              <p className="font-medium leading-none">{institution.name}</p>
+              <p className="mt-1 capitalize text-xs text-muted-foreground">
+                {institution.type.replace('_', ' ')}
+              </p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: (institution: Institution) => (
+          <StatusBadge status={institution.subscription_status} />
+        ),
+      },
+      {
+        id: 'contact',
+        header: 'Contact',
+        cell: (institution: Institution) => (
+          <div className="text-sm">
+            <p>{institution.contact_name || '—'}</p>
+            <p className="text-xs text-muted-foreground">
+              {institution.contact_email || 'No email'}
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: 'joinCode',
+        header: 'Join Code',
+        cell: (institution: Institution) => (
+          <span className="font-mono text-sm">
+            {institution.subscription_status === 'pending'
+              ? 'Hidden'
+              : institution.invite_code || 'Not generated'}
+          </span>
+        ),
+      },
+      {
+        id: 'submitted',
+        header: 'Submitted',
+        cell: (institution: Institution) => (
+          <span className="text-sm text-muted-foreground">
+            {new Date(institution.created_at).toLocaleDateString()}
+          </span>
+        ),
+      },
+    ],
+    []
+  )
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
@@ -151,7 +217,7 @@ export default function InstitutionsPage() {
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 New Institution
               </Button>
             </DialogTrigger>
@@ -171,29 +237,41 @@ export default function InstitutionsPage() {
           </Dialog>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8">Loading institutions...</div>
-        ) : institutions.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">No institutions found</p>
-              <Button variant="outline" className="mt-4" onClick={() => setIsModalOpen(true)}>
-                Add your first institution
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {institutions.map((institution) => (
-              <InstitutionCard
-                key={institution.id}
-                institution={institution}
-                onDelete={handleDeleteInstitution}
-                onApprove={handleApproveInstitution}
-              />
-            ))}
-          </div>
-        )}
+        <DataTable
+          title="Institution Directory"
+          description="Review onboarding requests and manage partner workspaces."
+          loading={loading}
+          data={institutions}
+          columns={columns}
+          getRowId={(row) => row.id}
+          emptyTitle="No institutions found"
+          emptyDescription="Create your first institution to get started."
+          emptyAction={
+            <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
+              Add institution
+            </Button>
+          }
+          actions={(institution) => (
+            <RowActions
+              actions={[
+                ...(institution.subscription_status === 'pending'
+                  ? [
+                      {
+                        label: 'Approve',
+                        onClick: () => handleApproveInstitution(institution.id),
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Delete',
+                  destructive: true,
+                  separator: institution.subscription_status === 'pending',
+                  onClick: () => handleDeleteInstitution(institution.id),
+                },
+              ]}
+            />
+          )}
+        />
       </div>
     </>
   )

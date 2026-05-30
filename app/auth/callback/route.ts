@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { isSuperAdminEmail } from '@/lib/admin-allowlist'
 import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,10 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(new URL('/login?error=auth_callback', requestUrl.origin))
+  }
+
+  if (isSuperAdminEmail(user.email)) {
+    await supabase.rpc('ensure_super_admin_access')
   }
 
   const { data: admin } = await supabase
