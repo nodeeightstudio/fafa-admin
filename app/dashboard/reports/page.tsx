@@ -1,8 +1,8 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getReports,
@@ -12,6 +12,9 @@ import {
   suspendUser,
   getSuspendedUsers,
   reinstateUser,
+  getModerators,
+  adminInviteModerator,
+  revokeModerator,
 } from "@/lib/actions/moderation";
 import { Report, ReportedType, SuspendedUser } from "@/types/moderation";
 import {
@@ -32,6 +35,8 @@ import {
   RefreshCcw,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
+  ShieldCheck,
 } from "lucide-react";
 import { DataTable } from "@/components/data-table/data-table";
 import { StatusBadge } from "@/components/data-table/status-badge";
@@ -41,11 +46,17 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("reports");
   const [reportPage, setReportPage] = useState(1);
   const [suspensionPage, setSuspensionPage] = useState(1);
+  const [moderatorPage, setModeratorPage] = useState(1);
 
   const [selectedContent, setSelectedContent] = useState<any>(null);
   const [isContentViewOpen, setIsContentViewOpen] = useState(false);
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Invite Moderator Dialog State
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteUserId, setInviteUserId] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
 
   const {
     data: reportData,
@@ -64,6 +75,16 @@ export default function ReportsPage() {
   } = useSWR(
     activeTab === "suspensions" ? [`suspensions`, suspensionPage] : null,
     () => getSuspendedUsers(suspensionPage, 10)
+  );
+
+  const {
+    data: moderatorData,
+    error: moderatorError,
+    isLoading: isModeratorsLoading,
+    mutate: mutateModerators,
+  } = useSWR(
+    activeTab === "moderators" ? [`moderators`, moderatorPage] : null,
+    () => getModerators(moderatorPage, 10)
   );
 
   const handleUpdateStatus = async (report: Report, status: any) => {
@@ -145,6 +166,37 @@ export default function ReportsPage() {
     }
   };
 
+  const handleInviteModerator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteUserId.trim()) {
+      toast.error("Please enter a valid User ID");
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      await adminInviteModerator(inviteUserId.trim());
+      toast.success("User promoted to Moderator successfully!");
+      setInviteUserId("");
+      setIsInviteOpen(false);
+      mutateModerators();
+    } catch (error: any) {
+      toast.error("Failed to invite moderator: " + error.message);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRevokeModerator = async (userId: string) => {
+    try {
+      await revokeModerator(userId);
+      toast.success("Moderator role revoked");
+      mutateModerators();
+    } catch (error: any) {
+      toast.error("Failed to revoke moderator role: " + error.message);
+    }
+  };
+
   const reportColumns = useMemo(
     () => [
       {
@@ -202,6 +254,40 @@ export default function ReportsPage() {
         header: "Status",
         cell: () => <StatusBadge status="suspended" />,
       },
+  const moderatorColumns = useMemo(
+    () => [
+      {
+        id: "userId",
+        header: "User / Profile ID",
+        cell: (user: any) => (
+          <span className="font-mono text-xs font-semibold">{user.id}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Full Name",
+        cell: (user: any) => (
+          <span className="font-medium text-sm">{user.full_name || user.display_name || "Community Member"}</span>
+        ),
+      },
+      {
+        id: "role",
+        header: "Role",
+        cell: () => (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <ShieldCheck className="h-3.5 w-3.5" /> Active Moderator
+          </span>
+        ),
+      },
+      {
+        id: "created",
+        header: "Date Joined",
+        cell: (user: any) => (
+          <span className="text-sm text-muted-foreground">
+            {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
+          </span>
+        ),
+      },
     ],
     []
   );
@@ -240,6 +326,7 @@ export default function ReportsPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="suspensions">Suspensions</TabsTrigger>
+          <TabsTrigger value="moderators">Moderators</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reports" className="space-y-4">
@@ -364,6 +451,73 @@ export default function ReportsPage() {
               ) : null
             }
           />
+        <TabsContent value="moderators" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Community members authorized to review reported posts and flag rule violations.
+            </p>
+            <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add Moderator
+            </Button>
+          </div>
+
+          <DataTable
+            title="Active Moderators"
+            description="Manage community moderators with flagging privileges."
+            loading={isModeratorsLoading}
+            data={moderatorData?.data ?? []}
+            columns={moderatorColumns}
+            getRowId={(row) => row.id}
+            emptyTitle="No moderators assigned"
+            emptyDescription="Click 'Add Moderator' above to promote a user to moderator."
+            actions={(user) => (
+              <RowActions
+                actions={[
+                  {
+                    label: "Revoke Moderator Role",
+                    onClick: () => handleRevokeModerator(user.id),
+                  },
+                ]}
+              />
+            )}
+            footer={
+              moderatorData && moderatorData.totalPages > 1 ? (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing page {moderatorData.page} of{" "}
+                    {moderatorData.totalPages} ({moderatorData.total} total)
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setModeratorPage((p) => Math.max(1, p - 1))
+                      }
+                      disabled={moderatorPage === 1}
+                    >
+                      <ChevronLeft className="mr-1 h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setModeratorPage((p) =>
+                          Math.min(moderatorData.totalPages, p + 1)
+                        )
+                      }
+                      disabled={moderatorPage === moderatorData.totalPages}
+                    >
+                      Next
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : null
+            }
+          />
         </TabsContent>
       </Tabs>
 
@@ -452,6 +606,49 @@ export default function ReportsPage() {
               </Button>
             </div>
           </DialogFooter>
+        </DialogContent>
+      {/* Invite/Promote Moderator Dialog */}
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleInviteModerator}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-primary" />
+                Add Community Moderator
+              </DialogTitle>
+              <DialogDescription>
+                Search for a community member by email address or User ID to promote them to moderator.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="userId">User Email Address or ID</Label>
+                <Input
+                  id="userId"
+                  type="text"
+                  placeholder="e.g. user@example.com or User UUID"
+                  value={inviteUserId}
+                  onChange={(e) => setInviteUserId(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsInviteOpen(false)}
+                disabled={isInviting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isInviting}>
+                {isInviting ? "Promoting..." : "Promote to Moderator"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

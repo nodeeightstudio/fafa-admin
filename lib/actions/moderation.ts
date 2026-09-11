@@ -207,19 +207,89 @@ export async function suspendUser(reportId: string, userId: string) {
   return true;
 }
 
-export async function adminInviteModerator(userId: string) {
+export async function adminInviteModerator(identifier: string) {
   const supabase = await createClient();
+  const trimmed = identifier.trim();
+
+  let targetUserId = trimmed;
+
+  // If input is an email address, resolve the user ID first
+  if (trimmed.includes("@")) {
+    // 1. Check profiles table by email
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", trimmed.toLowerCase())
+      .maybeSingle();
+
+    if (profile?.id) {
+      targetUserId = profile.id;
+    } else {
+      // 2. Fallback to RPC get_user_by_email function if configured
+      const { data: rpcUserId } = await supabase.rpc("get_user_by_email", {
+        email_input: trimmed.toLowerCase(),
+      });
+
+      if (rpcUserId) {
+        targetUserId = typeof rpcUserId === "string" ? rpcUserId : rpcUserId.id || rpcUserId;
+      } else {
+        throw new Error(`No user found registered with email "${trimmed}".`);
+      }
+    }
+  }
 
   const { error } = await supabase
     .from("profiles")
     .update({ is_moderator: true })
+    .eq("id", targetUserId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/reports");
+  return true;
+}
+
+export async function getModerators(page = 1, pageSize = 10) {
+  const supabase = await createClient();
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact" })
+    .eq("is_moderator", true)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    data: data as any[],
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}
+
+export async function revokeModerator(userId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_moderator: false })
     .eq("id", userId);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/dashboard/users");
+  revalidatePath("/dashboard/reports");
   return true;
 }
 
