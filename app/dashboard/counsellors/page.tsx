@@ -41,6 +41,7 @@ import { StatusBadge } from '@/components/data-table/status-badge'
 import { RowActions } from '@/components/data-table/row-actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 
 function getInitials(name: string) {
   return name
@@ -60,6 +61,9 @@ export default function CounsellorsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [onlineFilter, setOnlineFilter] = useState(false)
   const [institutions, setInstitutions] = useState<Institution[]>([])
+  const [institutionAdminInstitutionId, setInstitutionAdminInstitutionId] = useState<
+    string | undefined
+  >()
   const router = useRouter()
 
   useEffect(() => {
@@ -72,10 +76,20 @@ export default function CounsellorsPage() {
 
       const adminStatus = await isUserAdmin()
       if (!adminStatus) {
-        alert('Access denied. Admin privileges required.')
+        toast.error('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
         return
+      }
+
+      const { data: adminRecord } = await supabase
+        .from('admins')
+        .select('role, institution_id')
+        .eq('id', user.id)
+        .single()
+
+      if (adminRecord?.role === 'institution_admin' && adminRecord.institution_id) {
+        setInstitutionAdminInstitutionId(adminRecord.institution_id)
       }
 
       fetchInstitutions()
@@ -114,8 +128,9 @@ export default function CounsellorsPage() {
       await createCounsellor(formData)
       setIsModalOpen(false)
       await fetchCounsellors()
+      toast.success('Counsellor created')
     } catch (error: any) {
-      alert(error.message || 'Failed to create counsellor')
+      toast.error(error.message || 'Failed to create counsellor')
     }
     setFormLoading(false)
   }
@@ -128,8 +143,9 @@ export default function CounsellorsPage() {
     try {
       await deleteCounsellor(id)
       await fetchCounsellors()
+      toast.success('Counsellor deactivated')
     } catch (error: any) {
-      alert(error.message || 'Failed to delete counsellor')
+      toast.error(error.message || 'Failed to delete counsellor')
     }
   }
 
@@ -249,6 +265,7 @@ export default function CounsellorsPage() {
                 onCancel={() => setIsModalOpen(false)}
                 isLoading={formLoading}
                 institutions={institutions}
+                institutionAdminInstitutionId={institutionAdminInstitutionId}
               />
             </DialogContent>
           </Dialog>

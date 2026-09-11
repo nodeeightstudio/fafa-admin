@@ -31,6 +31,7 @@ import { getResources } from "@/lib/actions/resources";
 import { getBroadcastHistory, sendBroadcast } from "@/lib/actions/broadcasts";
 import { Resource } from "@/types/resource";
 import { Megaphone } from "lucide-react";
+import { toast } from "sonner";
 
 interface BroadcastHistoryItem {
   id: string;
@@ -76,13 +77,13 @@ export default function BroadcastsPage() {
         resourceId: resourceId === "none" ? null : resourceId,
       });
 
-      alert(`Broadcast sent to ${result.recipient_count} users.`);
+      toast.success(`Broadcast sent to ${result.recipient_count} users.`);
       setTitle("");
       setMessage("");
       setResourceId("none");
       setHistory(await getBroadcastHistory());
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to send broadcast");
+      toast.error(error instanceof Error ? error.message : "Failed to send broadcast");
     } finally {
       setSending(false);
     }

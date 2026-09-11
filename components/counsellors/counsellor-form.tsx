@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,14 @@ import { uploadImage } from "@/lib/upload";
 import { Loader2, Upload } from "lucide-react";
 import Image from "next/image";
 import { Institution } from "@/types/institution";
+import { toast } from "sonner";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import {
+  COUNSELLOR_TIER_LABELS,
+  formatGhs,
+  SessionPricingRow,
+} from "@/lib/session-pricing";
 
 interface CounsellorFormProps {
   initialData?: Partial<CounsellorFormData>;
@@ -30,6 +38,8 @@ interface CounsellorFormProps {
   onCancel?: () => void;
   isLoading?: boolean;
   institutions?: Institution[];
+  /** When set, defaults to Tier 0 support staff scoped to this institution. */
+  institutionAdminInstitutionId?: string;
 }
 
 export function CounsellorForm({
@@ -38,6 +48,7 @@ export function CounsellorForm({
   onCancel,
   isLoading,
   institutions = [],
+  institutionAdminInstitutionId,
 }: CounsellorFormProps) {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
     initialData?.specialties || []
@@ -54,6 +65,7 @@ export function CounsellorForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     initialData?.avatar_url || null
   );
+  const [sessionPricing, setSessionPricing] = useState<SessionPricingRow[]>([]);
 
   const {
     register,
@@ -74,13 +86,25 @@ export function CounsellorForm({
       is_active: initialData?.is_active ?? true,
       is_verified: initialData?.is_verified ?? false,
       status: initialData?.status || "pending",
-      tier: initialData?.tier || 0,
+      tier: initialData?.tier ?? (institutionAdminInstitutionId ? 0 : 0),
       specialties: initialData?.specialties || [],
       languages: initialData?.languages || ["English"],
       qualifications: initialData?.qualifications || [],
-      institution_ids: initialData?.institution_ids || [],
+      institution_ids:
+        initialData?.institution_ids ||
+        (institutionAdminInstitutionId ? [institutionAdminInstitutionId] : []),
     },
   });
+
+  useEffect(() => {
+    supabase
+      .from("session_pricing")
+      .select("tier, label, amount_ghs")
+      .order("tier")
+      .then(({ data }) => {
+        if (data) setSessionPricing(data as SessionPricingRow[]);
+      });
+  }, []);
 
   const toggleSpecialty = (specialty: string) => {
     const updated = selectedSpecialties.includes(specialty)
@@ -131,7 +155,7 @@ export function CounsellorForm({
         qualifications,
       });
     } catch (error: any) {
-      alert(error.message || "Failed to save counsellor");
+      toast.error(error.message || "Failed to save counsellor");
     } finally {
       setUploading(false);
     }
@@ -378,12 +402,30 @@ export function CounsellorForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Peer Counsellor (Tier 0)</SelectItem>
-              <SelectItem value="1">Verified (Tier 1)</SelectItem>
-              <SelectItem value="2">Premium (Tier 2)</SelectItem>
-              <SelectItem value="3">Elite (Tier 3)</SelectItem>
+              <SelectItem value="0">{COUNSELLOR_TIER_LABELS[0]} (Tier 0)</SelectItem>
+              <SelectItem value="1">{COUNSELLOR_TIER_LABELS[1]} (Tier 1)</SelectItem>
+              <SelectItem value="2">{COUNSELLOR_TIER_LABELS[2]} (Tier 2)</SelectItem>
+              <SelectItem value="3">{COUNSELLOR_TIER_LABELS[3]} (Tier 3)</SelectItem>
             </SelectContent>
           </Select>
+          {watch("tier") === 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Tier 0 staff reply in the shared institution support inbox. They cannot accept
+              bookings or access session tools. Assign at least one institution below.
+            </p>
+          )}
+          {(watch("tier") ?? 0) > 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              This tier currently charges{" "}
+              {formatGhs(
+                sessionPricing.find((row) => row.tier === watch("tier"))?.amount_ghs
+              )}{" "}
+              / session.{" "}
+              <Link href="/dashboard/settings" className="underline">
+                Edit rates
+              </Link>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">

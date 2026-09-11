@@ -206,3 +206,69 @@ export async function suspendUser(reportId: string, userId: string) {
   revalidatePath("/dashboard/reports");
   return true;
 }
+
+export async function adminInviteModerator(userId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_moderator: true })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/users");
+  return true;
+}
+
+export async function flagPostByModerator(postId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const { data, error } = await supabase.rpc("flag_post_by_moderator", {
+    p_post_id: postId,
+    p_moderator_id: user.id,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard/reports");
+  return data;
+}
+
+export async function getEscalatedUsers(page = 1, pageSize = 10) {
+  const supabase = await createClient();
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact" })
+    .eq("escalated_for_suspension", true)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    data: data as any[],
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}

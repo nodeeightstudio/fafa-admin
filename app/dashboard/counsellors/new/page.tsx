@@ -19,12 +19,16 @@ import { CounsellorForm } from "@/components/counsellors/counsellor-form";
 import { createCounsellor } from "@/lib/actions/counsellors";
 import { getInstitutions } from "@/lib/actions/institutions";
 import { Institution } from "@/types/institution";
+import { toast } from "sonner";
 
 export default function NewCounsellorPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [institutionAdminInstitutionId, setInstitutionAdminInstitutionId] = useState<
+    string | undefined
+  >();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -39,13 +43,26 @@ export default function NewCounsellorPage() {
 
       const adminStatus = await isUserAdmin();
       if (!adminStatus) {
-        alert("Access denied. Admin privileges required.");
+        toast.error("Access denied. Admin privileges required.");
         await supabase.auth.signOut();
         router.push("/login");
         return;
       }
 
       try {
+        const { data: adminRecord } = await supabase
+          .from("admins")
+          .select("role, institution_id")
+          .eq("id", user.id)
+          .single();
+
+        if (
+          adminRecord?.role === "institution_admin" &&
+          adminRecord.institution_id
+        ) {
+          setInstitutionAdminInstitutionId(adminRecord.institution_id);
+        }
+
         const data = await getInstitutions();
         setInstitutions(data);
       } catch (error) {
@@ -62,9 +79,10 @@ export default function NewCounsellorPage() {
     setFormLoading(true);
     try {
       await createCounsellor(formData);
+      toast.success("Counsellor created");
       router.push("/dashboard/counsellors");
     } catch (error: any) {
-      alert(error.message || "Failed to create counsellor");
+      toast.error(error.message || "Failed to create counsellor");
     } finally {
       setFormLoading(false);
     }
@@ -120,6 +138,7 @@ export default function NewCounsellorPage() {
               onCancel={() => router.push("/dashboard/counsellors")}
               isLoading={formLoading}
               institutions={institutions}
+              institutionAdminInstitutionId={institutionAdminInstitutionId}
             />
           </CardContent>
         </Card>

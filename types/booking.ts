@@ -1,4 +1,5 @@
-export type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+export type BookingStatus = 'awaiting_payment' | 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+export type PaymentStatus = 'unpaid' | 'paid' | 'failed' | 'expired'
 export type SessionType = 'chat' | 'online' | 'video'
 export type BookingDuration = 15 | 30 | 45 | 60
 
@@ -21,6 +22,11 @@ export interface Booking {
   session_notes: string | null
   created_at: string
   updated_at: string
+  amount_pesewas: number | null
+  currency: string | null
+  payment_status: PaymentStatus | null
+  payment_reference: string | null
+  paid_at: string | null
 }
 
 export interface BookingWithDetails extends Booking {

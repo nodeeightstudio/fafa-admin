@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Phone,
 } from "lucide-react";
+import { formatGhs, pesewasToGhs } from "@/lib/session-pricing";
 
 interface BookingDetailDialogProps {
   booking: BookingWithDetails | null;
@@ -195,6 +196,25 @@ export function BookingDetailDialog({
           <div>
             <h3 className="font-semibold mb-2">Status</h3>
             <Badge className="text-sm">{booking.status}</Badge>
+          </div>
+
+          <Separator />
+          <div>
+            <h3 className="font-semibold mb-2">Payment</h3>
+            <div className="space-y-1 text-sm">
+              <p>
+                Amount:{' '}
+                {booking.amount_pesewas != null
+                  ? formatGhs(pesewasToGhs(booking.amount_pesewas))
+                  : '—'}
+              </p>
+              <p>Status: {booking.payment_status || '—'}</p>
+              {booking.payment_reference && (
+                <p className="text-xs text-muted-foreground break-all">
+                  Ref: {booking.payment_reference}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Cancellation Info */}
