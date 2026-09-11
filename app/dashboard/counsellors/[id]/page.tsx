@@ -36,6 +36,7 @@ import { CounsellorForm } from "@/components/counsellors/counsellor-form";
 import { AvailabilityScheduler } from "@/components/counsellors/availability-scheduler";
 import { getCounsellor, updateCounsellor } from "@/lib/actions/counsellors";
 import { Edit, Mail, Phone, Calendar, Star } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CounsellorDetailPage() {
   const params = useParams();
@@ -59,7 +60,7 @@ export default function CounsellorDetailPage() {
 
       const adminStatus = await isUserAdmin();
       if (!adminStatus) {
-        alert("Access denied. Admin privileges required.");
+        toast.error("Access denied. Admin privileges required.");
         await supabase.auth.signOut();
         router.push("/login");
         return;
@@ -76,7 +77,7 @@ export default function CounsellorDetailPage() {
       const data = await getCounsellor(counsellorId);
       setCounsellor(data as any);
     } catch (error) {
-      alert("Failed to load counsellor");
+      toast.error("Failed to load counsellor");
       router.push("/dashboard/counsellors");
     }
     setLoading(false);
@@ -88,8 +89,9 @@ export default function CounsellorDetailPage() {
       await updateCounsellor(counsellorId, formData);
       setIsEditModalOpen(false);
       await fetchCounsellor();
+      toast.success("Counsellor updated");
     } catch (error: any) {
-      alert(error.message || "Failed to update counsellor");
+      toast.error(error.message || "Failed to update counsellor");
     }
     setFormLoading(false);
   };

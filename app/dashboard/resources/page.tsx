@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
 import { RowActions } from "@/components/data-table/row-actions";
+import { toast } from "sonner";
 
 function getTypeIcon(type: string) {
   switch (type) {
@@ -75,9 +76,10 @@ export default function ResourcesPage() {
     try {
       await deleteResource(id);
       setResources(resources.filter((r) => r.id !== id));
+      toast.success("Resource deleted");
     } catch (error) {
       console.error("Error deleting resource:", error);
-      alert("Failed to delete resource");
+      toast.error("Failed to delete resource");
     }
   };
 

@@ -10,6 +10,7 @@ import {
   Calendar,
   Building2,
   Megaphone,
+  MessageCircle,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
@@ -45,6 +46,7 @@ const superAdminNav = [
     items: [
       { title: "All Counsellors", url: "/dashboard/counsellors" },
       { title: "Add New", url: "/dashboard/counsellors/new" },
+      { title: "Specialties", url: "/dashboard/specialties" },
     ],
   },
   {
@@ -58,9 +60,19 @@ const superAdminNav = [
     icon: Calendar,
   },
   {
+    title: "Payout Requests",
+    url: "/dashboard/payouts",
+    icon: Megaphone,
+  },
+  {
     title: "Broadcasts",
     url: "/dashboard/broadcasts",
     icon: Megaphone,
+  },
+  {
+    title: "Support Inbox",
+    url: "/dashboard/support",
+    icon: MessageCircle,
   },
   {
     title: "Resources",
@@ -100,6 +112,11 @@ const institutionAdminNav = [
     title: "Counsellors",
     url: "/dashboard/counsellors",
     icon: Users,
+  },
+  {
+    title: "Support Inbox",
+    url: "/dashboard/support",
+    icon: MessageCircle,
   },
 ]
 

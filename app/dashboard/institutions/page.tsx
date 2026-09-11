@@ -34,6 +34,7 @@ import {
 import { DataTable } from '@/components/data-table/data-table'
 import { StatusBadge } from '@/components/data-table/status-badge'
 import { RowActions } from '@/components/data-table/row-actions'
+import { toast } from 'sonner'
 
 export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -52,7 +53,7 @@ export default function InstitutionsPage() {
 
       const adminStatus = await isUserAdmin()
       if (!adminStatus) {
-        alert('Access denied. Admin privileges required.')
+        toast.error('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
         return
@@ -86,8 +87,9 @@ export default function InstitutionsPage() {
       await createInstitution(formData)
       setIsModalOpen(false)
       await fetchInstitutions()
+      toast.success('Institution created')
     } catch (error: any) {
-      alert(error.message || 'Failed to create institution')
+      toast.error(error.message || 'Failed to create institution')
     }
     setFormLoading(false)
   }
@@ -100,8 +102,9 @@ export default function InstitutionsPage() {
     try {
       await deleteInstitution(id)
       await fetchInstitutions()
+      toast.success('Institution deleted')
     } catch (error: any) {
-      alert(error.message || 'Failed to delete institution')
+      toast.error(error.message || 'Failed to delete institution')
     }
   }
 
@@ -113,8 +116,9 @@ export default function InstitutionsPage() {
     try {
       await approveInstitution(id)
       await fetchInstitutions()
+      toast.success('Institution approved')
     } catch (error: any) {
-      alert(error.message || 'Failed to approve institution')
+      toast.error(error.message || 'Failed to approve institution')
     }
   }
 

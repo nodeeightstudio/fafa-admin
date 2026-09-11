@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2, Plus } from 'lucide-react'
 import { getAvailability, addAvailabilitySlot, deleteAvailabilitySlot } from '@/lib/actions/availability'
+import { toast } from 'sonner'
 
 interface AvailabilitySchedulerProps {
   counsellorId: string
@@ -54,8 +55,9 @@ export function AvailabilityScheduler({ counsellorId }: AvailabilitySchedulerPro
         start_time: '09:00',
         end_time: '17:00'
       })
+      toast.success('Availability slot added')
     } catch (error: any) {
-      alert(error.message || 'Failed to add availability slot')
+      toast.error(error.message || 'Failed to add availability slot')
     }
   }
 
@@ -67,8 +69,9 @@ export function AvailabilityScheduler({ counsellorId }: AvailabilitySchedulerPro
     try {
       await deleteAvailabilitySlot(slotId)
       await fetchAvailability()
+      toast.success('Availability slot deleted')
     } catch (error: any) {
-      alert(error.message || 'Failed to delete availability slot')
+      toast.error(error.message || 'Failed to delete availability slot')
     }
   }
 

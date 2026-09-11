@@ -26,6 +26,8 @@ import { StatusBadge } from '@/components/data-table/status-badge'
 import { RowActions } from '@/components/data-table/row-actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
+import { formatGhs, pesewasToGhs } from '@/lib/session-pricing'
 
 function getInitials(name: string) {
   return name
@@ -94,7 +96,7 @@ export default function BookingsPage() {
 
       const adminStatus = await isUserAdmin()
       if (!adminStatus) {
-        alert('Access denied. Admin privileges required.')
+        toast.error('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
         return
@@ -128,8 +130,9 @@ export default function BookingsPage() {
       await updateBookingStatus(bookingId, status, reason)
       setIsDetailDialogOpen(false)
       await fetchBookings()
+      toast.success('Booking updated')
     } catch (error: any) {
-      alert(error.message || 'Failed to update booking')
+      toast.error(error.message || 'Failed to update booking')
     }
   }
 
@@ -187,6 +190,25 @@ export default function BookingsPage() {
         id: 'status',
         header: 'Status',
         cell: (booking: BookingWithDetails) => <StatusBadge status={booking.status} />,
+      },
+      {
+        id: 'amount',
+        header: 'Amount',
+        cell: (booking: BookingWithDetails) => (
+          <span className="text-sm">
+            {booking.amount_pesewas != null ? formatGhs(pesewasToGhs(booking.amount_pesewas)) : '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'payment',
+        header: 'Payment',
+        cell: (booking: BookingWithDetails) =>
+          booking.payment_status ? (
+            <StatusBadge status={booking.payment_status} />
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
       },
     ],
     []

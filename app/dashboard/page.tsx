@@ -18,8 +18,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { OverviewSnapshot } from '@/components/overview-snapshot'
+import { PaymentStats } from '@/components/payment-stats'
 import { DashboardTracker } from '@/components/dashboard-tracker'
-import { StatsCards } from '@/components/stats-cards'
+import { toast } from 'sonner'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -36,7 +37,7 @@ export default function DashboardPage() {
 
       const adminStatus = await isUserAdmin()
       if (!adminStatus) {
-        alert('Access denied. Admin privileges required.')
+        toast.error('Access denied. Admin privileges required.')
         await supabase.auth.signOut()
         router.push('/login')
         return
@@ -92,6 +93,7 @@ export default function DashboardPage() {
       </header>
       <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
         <OverviewSnapshot />
+        <PaymentStats />
         <DashboardTracker />
 
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
