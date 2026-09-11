@@ -17,17 +17,42 @@ export interface Report {
 
 export interface ModeratedContent {
   id: string;
-  content: string;
-  user_id: string;
-  created_at: string;
-  author_id: string;
-  author_name?: string;
+  text?: string;
+  content?: string;
+  user_id?: string;
+  author_id?: string;
+  is_deleted?: boolean;
+  created_at?: string;
 }
 
 export interface SuspendedUser {
   id: string;
   created_at: string;
   is_active: boolean;
-  avatar_number: number;
+  avatar_number?: number;
   email?: string;
+  full_name?: string;
+  display_name?: string;
+  avatar_url?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email?: string;
+  full_name?: string;
+  display_name?: string;
+  avatar_url?: string;
+  is_moderator?: boolean;
+  is_active?: boolean;
+  created_at?: string;
+  deleted_posts_count?: number;
+  escalated_for_suspension?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

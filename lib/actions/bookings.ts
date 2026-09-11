@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
-import { BookingWithDetails } from '@/types/booking'
+import { Booking, BookingStatus, BookingWithDetails } from '@/types/booking'
 
 export async function getBookings(filters?: {
   status?: string
@@ -20,7 +20,7 @@ export async function getBookings(filters?: {
     `)
     .order('scheduled_at', { ascending: false })
 
-  if (filters?.status) {
+  if (filters?.status && filters.status !== 'all') {
     query = query.eq('status', filters.status)
   }
 
@@ -45,7 +45,7 @@ export async function getBookings(filters?: {
   return data as BookingWithDetails[]
 }
 
-export async function getBooking(id: string) {
+export async function getBookingById(id: string) {
   const supabase = await createClient()
   
   const { data, error } = await supabase
@@ -59,7 +59,7 @@ export async function getBooking(id: string) {
     .single()
 
   if (error) {
-    throw new Error('Booking not found')
+    throw new Error(error.message)
   }
 
   return data as BookingWithDetails
@@ -67,7 +67,7 @@ export async function getBooking(id: string) {
 
 export async function updateBookingStatus(
   bookingId: string,
-  status: string,
+  status: BookingStatus,
   cancellationReason?: string
 ) {
   const supabase = await createClient()
@@ -77,7 +77,7 @@ export async function updateBookingStatus(
     throw new Error('Unauthorized')
   }
 
-  const updateData: any = {
+  const updateData: Partial<Booking> = {
     status,
     updated_at: new Date().toISOString()
   }

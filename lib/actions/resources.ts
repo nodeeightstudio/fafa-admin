@@ -117,7 +117,7 @@ export async function updateResource(
 ) {
   const supabase = await createClient();
 
-  const updateData: any = {
+  const updateData: Partial<Resource> = {
     updated_at: new Date().toISOString(),
   };
 

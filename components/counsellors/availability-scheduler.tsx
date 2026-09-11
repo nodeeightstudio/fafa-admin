@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CounsellorAvailability, DAYS_OF_WEEK } from '@/types/counsellor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,20 +30,20 @@ export function AvailabilityScheduler({ counsellorId }: AvailabilitySchedulerPro
     end_time: '17:00'
   })
 
-  useEffect(() => {
-    fetchAvailability()
-  }, [counsellorId])
-
-  const fetchAvailability = async () => {
-    setLoading(true)
+  const fetchAvailability = useCallback(async () => {
     try {
       const data = await getAvailability(counsellorId)
       setAvailability(data)
     } catch (error) {
       console.error('Error fetching availability:', error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [counsellorId])
+
+  useEffect(() => {
+    fetchAvailability()
+  }, [fetchAvailability])
 
   const addSlot = async () => {
     try {
@@ -56,8 +56,8 @@ export function AvailabilityScheduler({ counsellorId }: AvailabilitySchedulerPro
         end_time: '17:00'
       })
       toast.success('Availability slot added')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add availability slot')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add availability slot')
     }
   }
 
@@ -70,8 +70,8 @@ export function AvailabilityScheduler({ counsellorId }: AvailabilitySchedulerPro
       await deleteAvailabilitySlot(slotId)
       await fetchAvailability()
       toast.success('Availability slot deleted')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete availability slot')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete availability slot')
     }
   }
 

@@ -154,8 +154,8 @@ export function CounsellorForm({
         languages: selectedLanguages,
         qualifications,
       });
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save counsellor");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to save counsellor");
     } finally {
       setUploading(false);
     }
@@ -264,7 +264,7 @@ export function CounsellorForm({
             <Label htmlFor="gender">Gender</Label>
             <Select
               value={watch("gender") || "Male"}
-              onValueChange={(value) => setValue("gender", value as any)}
+              onValueChange={(value) => setValue("gender", value as "Male" | "Female" | "Other")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select gender" />

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
-import { Report, ReportStatus, ReportedType } from "@/types/moderation";
+import { Report, ReportStatus, ReportedType, SuspendedUser, UserProfile } from "@/types/moderation";
 import { revalidatePath } from "next/cache";
 
 export async function getReports(
@@ -56,7 +56,7 @@ export async function getSuspendedUsers(page = 1, pageSize = 10) {
   }
 
   return {
-    data: data as any[], // Typing as any for now to avoid strict profile type issues
+    data: (data || []) as SuspendedUser[],
     total: count || 0,
     page,
     pageSize,
@@ -251,6 +251,30 @@ export async function adminInviteModerator(identifier: string) {
   return true;
 }
 
+export async function searchUsersForModerator(query: string) {
+  const supabase = await createClient();
+  const trimmed = query.trim();
+
+  if (!trimmed || trimmed.length < 2) {
+    return [];
+  }
+
+  // Try searching profiles by email, full_name, or display_name (excluding existing moderators)
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, display_name, avatar_url, is_moderator")
+    .or(`email.ilike.%${trimmed}%,full_name.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`)
+    .neq("is_moderator", true)
+    .limit(8);
+
+  if (error) {
+    console.error("Error searching users:", error);
+    return [];
+  }
+
+  return ((data || []) as UserProfile[]).filter((user: UserProfile) => !user.is_moderator);
+}
+
 export async function getModerators(page = 1, pageSize = 10) {
   const supabase = await createClient();
 
@@ -269,7 +293,7 @@ export async function getModerators(page = 1, pageSize = 10) {
   }
 
   return {
-    data: data as any[],
+    data: (data || []) as UserProfile[],
     total: count || 0,
     page,
     pageSize,
@@ -335,7 +359,7 @@ export async function getEscalatedUsers(page = 1, pageSize = 10) {
   }
 
   return {
-    data: data as any[],
+    data: (data || []) as UserProfile[],
     total: count || 0,
     page,
     pageSize,

@@ -195,7 +195,7 @@ export async function updateCounsellor(
 ) {
   const supabase = await createClient();
 
-  const updateData: any = {
+  const updateData: Partial<Counsellor> = {
     updated_at: new Date().toISOString(),
   };
 

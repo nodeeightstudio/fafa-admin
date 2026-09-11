@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import Heading from "@tiptap/extension-heading";
 import TiptapImage from "@tiptap/extension-image";
 import StarterKit from "@tiptap/starter-kit";
@@ -35,7 +35,7 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor }: { editor: Editor | null }) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isUserAdmin } from "@/lib/supabase";
+import { CounsellorFormData } from "@/types/counsellor";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -75,14 +76,14 @@ export default function NewCounsellorPage() {
     checkAuth();
   }, [router]);
 
-  const handleCreateCounsellor = async (formData: any) => {
+  const handleCreateCounsellor = async (formData: CounsellorFormData) => {
     setFormLoading(true);
     try {
       await createCounsellor(formData);
       toast.success("Counsellor created");
       router.push("/dashboard/counsellors");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create counsellor");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to create counsellor");
     } finally {
       setFormLoading(false);
     }

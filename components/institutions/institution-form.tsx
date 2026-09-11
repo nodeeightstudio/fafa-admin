@@ -13,21 +13,24 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 
 interface InstitutionFormProps {
-  onSubmit: (data: any) => void
+  onSubmit: (data: Omit<Institution, 'id' | 'created_at' | 'updated_at'>) => void
   onCancel: () => void
   isLoading?: boolean
 }
 
+const generateInviteCode = () => Math.random().toString(36).substring(2, 8).toUpperCase()
+
 export function InstitutionForm({ onSubmit, onCancel, isLoading }: InstitutionFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Institution, 'id' | 'created_at' | 'updated_at'>>(() => ({
     name: '',
     type: 'school',
-    invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+    logo_url: null,
+    invite_code: generateInviteCode(),
     subscription_status: 'active',
     allow_global_posting: true,
     allow_global_resources: true,
     allow_global_counselors: true,
-  })
+  }))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,7 +55,7 @@ export function InstitutionForm({ onSubmit, onCancel, isLoading }: InstitutionFo
           <Label htmlFor="type">Institution Type</Label>
           <Select
             value={formData.type}
-            onValueChange={(value) => setFormData({ ...formData, type: value as any })}
+            onValueChange={(value) => setFormData({ ...formData, type: value as Institution['type'] })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -79,7 +82,7 @@ export function InstitutionForm({ onSubmit, onCancel, isLoading }: InstitutionFo
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => setFormData({ ...formData, invite_code: Math.random().toString(36).substring(2, 8).toUpperCase() })}
+              onClick={() => setFormData({ ...formData, invite_code: generateInviteCode() })}
             >
               Regen
             </Button>
