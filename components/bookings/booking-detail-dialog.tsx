@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookingWithDetails } from "@/types/booking";
+import { BookingWithDetails, BookingStatus } from "@/types/booking";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ interface BookingDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdateStatus: (
     bookingId: string,
-    status: string,
+    status: BookingStatus,
     reason?: string
   ) => Promise<void>;
 }
@@ -49,7 +49,7 @@ export function BookingDetailDialog({
 
   if (!booking) return null;
 
-  const handleStatusUpdate = async (status: string) => {
+  const handleStatusUpdate = async (status: BookingStatus) => {
     setLoading(true);
     await onUpdateStatus(
       booking.id,

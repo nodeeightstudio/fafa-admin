@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, isUserAdmin } from '@/lib/supabase'
-import { Counsellor } from '@/types/counsellor'
+import { Counsellor, CounsellorFormData } from '@/types/counsellor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -122,15 +122,15 @@ export default function CounsellorsPage() {
     }
   }
 
-  const handleCreateCounsellor = async (formData: any) => {
+  const handleCreateCounsellor = async (formData: CounsellorFormData) => {
     setFormLoading(true)
     try {
       await createCounsellor(formData)
       setIsModalOpen(false)
       await fetchCounsellors()
       toast.success('Counsellor created')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create counsellor')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create counsellor')
     }
     setFormLoading(false)
   }
@@ -144,8 +144,8 @@ export default function CounsellorsPage() {
       await deleteCounsellor(id)
       await fetchCounsellors()
       toast.success('Counsellor deactivated')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete counsellor')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete counsellor')
     }
   }
 

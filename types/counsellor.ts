@@ -26,6 +26,14 @@ export interface Counsellor {
   updated_at: string;
   last_active_at: string | null;
   institution_ids: string[];
+  reviews?: Array<{
+    rating: number;
+    comment?: string | null;
+    created_at?: string;
+    user?: {
+      full_name?: string | null;
+    };
+  }>;
 }
 
 export interface CounsellorAvailability {

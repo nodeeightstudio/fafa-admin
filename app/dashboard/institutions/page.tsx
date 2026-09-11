@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, isUserAdmin, isInstitutionAdmin } from '@/lib/supabase'
 import { Institution } from '@/types/institution'
@@ -43,6 +43,17 @@ export default function InstitutionsPage() {
   const [formLoading, setFormLoading] = useState(false)
   const router = useRouter()
 
+  const fetchInstitutions = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getInstitutions()
+      setInstitutions(data)
+    } catch (error) {
+      console.error('Error fetching institutions:', error)
+    }
+    setLoading(false)
+  }, [])
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -68,28 +79,17 @@ export default function InstitutionsPage() {
       fetchInstitutions()
     }
     checkAuth()
-  }, [router])
+  }, [router, fetchInstitutions])
 
-  const fetchInstitutions = async () => {
-    setLoading(true)
-    try {
-      const data = await getInstitutions()
-      setInstitutions(data)
-    } catch (error) {
-      console.error('Error fetching institutions:', error)
-    }
-    setLoading(false)
-  }
-
-  const handleCreateInstitution = async (formData: any) => {
+  const handleCreateInstitution = async (formData: Omit<Institution, 'id' | 'created_at' | 'updated_at'>) => {
     setFormLoading(true)
     try {
       await createInstitution(formData)
       setIsModalOpen(false)
       await fetchInstitutions()
       toast.success('Institution created')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create institution')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create institution')
     }
     setFormLoading(false)
   }
@@ -103,8 +103,8 @@ export default function InstitutionsPage() {
       await deleteInstitution(id)
       await fetchInstitutions()
       toast.success('Institution deleted')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete institution')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete institution')
     }
   }
 
@@ -117,8 +117,8 @@ export default function InstitutionsPage() {
       await approveInstitution(id)
       await fetchInstitutions()
       toast.success('Institution approved')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to approve institution')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to approve institution')
     }
   }
 

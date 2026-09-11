@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase, isUserAdmin } from "@/lib/supabase";
-import { Counsellor } from "@/types/counsellor";
+import { Counsellor, CounsellorFormData } from "@/types/counsellor";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -75,7 +75,7 @@ export default function CounsellorDetailPage() {
     setLoading(true);
     try {
       const data = await getCounsellor(counsellorId);
-      setCounsellor(data as any);
+      setCounsellor(data as Counsellor);
     } catch (error) {
       toast.error("Failed to load counsellor");
       router.push("/dashboard/counsellors");
@@ -83,15 +83,15 @@ export default function CounsellorDetailPage() {
     setLoading(false);
   };
 
-  const handleUpdateCounsellor = async (formData: any) => {
+  const handleUpdateCounsellor = async (formData: Partial<CounsellorFormData>) => {
     setFormLoading(true);
     try {
       await updateCounsellor(counsellorId, formData);
       setIsEditModalOpen(false);
       await fetchCounsellor();
       toast.success("Counsellor updated");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update counsellor");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update counsellor");
     }
     setFormLoading(false);
   };
@@ -338,11 +338,11 @@ export default function CounsellorDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {(counsellor as any).reviews &&
-                (counsellor as any).reviews.length > 0 ? (
+                {counsellor.reviews &&
+                counsellor.reviews.length > 0 ? (
                   <div className="space-y-4">
-                    {(counsellor as any).reviews.map(
-                      (review: any, index: number) => (
+                    {counsellor.reviews.map(
+                      (review, index: number) => (
                         <div
                           key={index}
                           className="border-b pb-4 last:border-0"
@@ -359,7 +359,7 @@ export default function CounsellorDetailPage() {
                               )}
                             </div>
                             <span className="text-sm text-muted-foreground">
-                              {new Date(review.created_at).toLocaleDateString()}
+                              {review.created_at ? new Date(review.created_at).toLocaleDateString() : ""}
                             </span>
                           </div>
                           {review.comment && (

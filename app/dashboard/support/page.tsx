@@ -117,8 +117,8 @@ export default function SupportInboxPage() {
 
       try {
         await fetchConversations()
-      } catch (error: any) {
-        toast.error(error.message || "Failed to load support conversations")
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : "Failed to load support conversations")
       } finally {
         setLoading(false)
       }

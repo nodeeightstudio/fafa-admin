@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { supabase, isUserAdmin } from '@/lib/supabase'
-import { BookingWithDetails } from '@/types/booking'
+import { BookingStatus, BookingWithDetails } from '@/types/booking'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import {
@@ -86,6 +86,19 @@ export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState('all')
   const router = useRouter()
 
+  const fetchBookings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getBookings({
+        status: activeTab !== 'all' ? activeTab : undefined,
+      })
+      setBookings(data)
+    } catch (error) {
+      console.error('Error fetching bookings:', error)
+    }
+    setLoading(false)
+  }, [activeTab])
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -105,34 +118,21 @@ export default function BookingsPage() {
       fetchBookings()
     }
     checkAuth()
-  }, [router, activeTab])
-
-  const fetchBookings = async () => {
-    setLoading(true)
-    try {
-      const data = await getBookings({
-        status: activeTab !== 'all' ? activeTab : undefined,
-      })
-      setBookings(data)
-    } catch (error) {
-      console.error('Error fetching bookings:', error)
-    }
-    setLoading(false)
-  }
+  }, [router, fetchBookings])
 
   const handleViewDetails = (booking: BookingWithDetails) => {
     setSelectedBooking(booking)
     setIsDetailDialogOpen(true)
   }
 
-  const handleUpdateStatus = async (bookingId: string, status: string, reason?: string) => {
+  const handleUpdateStatus = async (bookingId: string, status: BookingStatus, reason?: string) => {
     try {
       await updateBookingStatus(bookingId, status, reason)
       setIsDetailDialogOpen(false)
       await fetchBookings()
       toast.success('Booking updated')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update booking')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update booking')
     }
   }
 
