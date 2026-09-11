@@ -1,4 +1,4 @@
-export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
+export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed" | "escalated";
 export type ReportedType = "post" | "comment" | "user";
 
 export interface Report {

@@ -16,7 +16,7 @@ export async function getReports(
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
-  if (status && status !== "pending") {
+  if (status) {
     query = query.eq("status", status);
   }
 

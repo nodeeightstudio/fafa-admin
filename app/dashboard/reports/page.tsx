@@ -18,6 +18,7 @@ import {
   adminInviteModerator,
   revokeModerator,
   searchUsersForModerator,
+  getEscalatedUsers,
 } from "@/lib/actions/moderation";
 import {
   Report,
@@ -29,6 +30,7 @@ import {
 import { ReportsTab } from "@/components/moderation/reports-tab";
 import { SuspensionsTab } from "@/components/moderation/suspensions-tab";
 import { ModeratorsTab } from "@/components/moderation/moderators-tab";
+import { EscalationsTab } from "@/components/moderation/escalations-tab";
 import { ReviewContentDialog } from "@/components/moderation/review-content-dialog";
 import { InviteModeratorDialog } from "@/components/moderation/invite-moderator-dialog";
 
@@ -37,6 +39,7 @@ export default function ReportsPage() {
   const [reportPage, setReportPage] = useState(1);
   const [suspensionPage, setSuspensionPage] = useState(1);
   const [moderatorPage, setModeratorPage] = useState(1);
+  const [escalationPage, setEscalationPage] = useState(1);
 
   const [selectedContent, setSelectedContent] = useState<ModeratedContent | null>(null);
   const [isContentViewOpen, setIsContentViewOpen] = useState(false);
@@ -83,6 +86,26 @@ export default function ReportsPage() {
     activeTab === "moderators" ? [`moderators`, moderatorPage] : null,
     () => getModerators(moderatorPage, 10)
   );
+
+  const {
+    data: escalationData,
+    error: escalationError,
+    isLoading: isEscalationsLoading,
+    mutate: mutateEscalations,
+  } = useSWR(
+    activeTab === "escalations" ? [`escalations`, escalationPage] : null,
+    () => getEscalatedUsers(escalationPage, 10)
+  );
+
+  const handleSuspendEscalatedUser = async (userId: string) => {
+    try {
+      await suspendUser("", userId);
+      toast.success("Escalated user suspended.");
+      mutateEscalations();
+    } catch (error: unknown) {
+      toast.error("Failed to suspend user: " + (error instanceof Error ? error.message : String(error)));
+    }
+  };
 
   const handleUpdateStatus = async (report: Report, status: ReportStatus) => {
     setIsActionLoading(true);
@@ -227,6 +250,7 @@ export default function ReportsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="escalations">Escalations</TabsTrigger>
           <TabsTrigger value="suspensions">Suspensions</TabsTrigger>
           <TabsTrigger value="moderators">Moderators</TabsTrigger>
         </TabsList>
@@ -239,6 +263,16 @@ export default function ReportsPage() {
             setReportPage={setReportPage}
             onViewContent={handleViewContent}
             onUpdateStatus={(report, status) => handleUpdateStatus(report, status)}
+          />
+        </TabsContent>
+
+        <TabsContent value="escalations" className="space-y-4">
+          <EscalationsTab
+            isLoading={isEscalationsLoading}
+            escalationData={escalationData}
+            escalationPage={escalationPage}
+            setEscalationPage={setEscalationPage}
+            onSuspendUser={handleSuspendEscalatedUser}
           />
         </TabsContent>
 
