@@ -1,5 +1,5 @@
--- Migration: 20260911_upwork_escrow_wallet_summary.sql
--- Description: Upwork-style Escrow calculation for get_counsellor_wallet_summary RPC function
+-- Migration: 20260911_escrow_wallet_summary.sql
+-- Description: Escrow calculation for get_counsellor_wallet_summary RPC function
 
 CREATE OR REPLACE FUNCTION get_counsellor_wallet_summary(
   p_counsellor_id UUID
@@ -23,7 +23,7 @@ BEGIN
   v_counsellor_share := v_gross_revenue * 0.80;
   v_platform_share := v_gross_revenue * 0.20;
 
-  -- 2. Sum Upwork-style IN ESCROW funds for upcoming/funded sessions (80% share)
+  -- 2. Sum IN ESCROW funds for upcoming/funded sessions (80% share)
   SELECT COALESCE(SUM(amount * 0.80), 0.00) INTO v_in_escrow_amount
   FROM bookings
   WHERE counsellor_id = p_counsellor_id

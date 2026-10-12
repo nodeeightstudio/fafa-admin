@@ -15,6 +15,7 @@ interface ReportsTabProps {
   setReportPage: React.Dispatch<React.SetStateAction<number>>;
   onViewContent: (report: Report) => void;
   onUpdateStatus: (report: Report, status: ReportStatus) => void;
+  onAssignCounsellor: (report: Report) => void;
 }
 
 export function ReportsTab({
@@ -24,6 +25,7 @@ export function ReportsTab({
   setReportPage,
   onViewContent,
   onUpdateStatus,
+  onAssignCounsellor,
 }: ReportsTabProps) {
   const reportColumns = useMemo(
     () => [
@@ -86,6 +88,10 @@ export function ReportsTab({
             {
               label: "Review",
               onClick: () => onViewContent(report),
+            },
+            {
+              label: "Assign counsellor",
+              onClick: () => onAssignCounsellor(report),
             },
             ...(report.status === "pending"
               ? [

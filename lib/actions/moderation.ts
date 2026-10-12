@@ -366,3 +366,57 @@ export async function getEscalatedUsers(page = 1, pageSize = 10) {
     totalPages: Math.ceil((count || 0) / pageSize),
   };
 }
+
+export async function assignReportToCounsellor(reportId: string, counsellorId: string) {
+  const supabase = await createClient();
+
+  const { data: report, error: reportError } = await supabase
+    .from("reports")
+    .select("id, reported_type, reported_id")
+    .eq("id", reportId)
+    .single();
+
+  if (reportError || !report) {
+    throw new Error(reportError?.message || "Report not found");
+  }
+
+  let userId = report.reported_id as string;
+  let postId: string | null = null;
+
+  if (report.reported_type === "post") {
+    postId = report.reported_id;
+    const { data: post, error } = await supabase
+      .from("posts")
+      .select("user_id")
+      .eq("id", report.reported_id)
+      .single();
+    if (error || !post?.user_id) throw new Error(error?.message || "Could not find the post author");
+    userId = post.user_id;
+  } else if (report.reported_type === "comment") {
+    const { data: comment, error } = await supabase
+      .from("comments")
+      .select("user_id, post_id")
+      .eq("id", report.reported_id)
+      .single();
+    if (error || !comment?.user_id) {
+      throw new Error(error?.message || "Could not find the comment author");
+    }
+    userId = comment.user_id;
+    postId = comment.post_id;
+  }
+
+  const { error } = await supabase.from("support_assignments").upsert(
+    {
+      report_id: reportId,
+      user_id: userId,
+      counsellor_id: counsellorId,
+      post_id: postId,
+      status: "open",
+    },
+    { onConflict: "report_id,counsellor_id" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/reports");
+}

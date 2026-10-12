@@ -1,5 +1,5 @@
--- Migration: 20260911_jodel_moderation_consensus.sql
--- Description: Jodel-style consensus voting table and RPC functions (Keep, Delete, Escalate, Skip)
+-- Migration: 20260911_moderation_consensus.sql
+-- Description: Consensus voting table and RPC functions (Keep, Delete, Escalate, Skip)
 
 -- 1. Create table for tracking individual moderator votes on reports
 CREATE TABLE IF NOT EXISTS moderation_votes (

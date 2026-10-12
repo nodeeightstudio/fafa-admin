@@ -10,6 +10,7 @@ import {
   getReports,
   getReportedContent,
   updateReportStatus,
+  assignReportToCounsellor,
   deleteReportedContent,
   suspendUser,
   getSuspendedUsers,
@@ -32,6 +33,7 @@ import { SuspensionsTab } from "@/components/moderation/suspensions-tab";
 import { ModeratorsTab } from "@/components/moderation/moderators-tab";
 import { EscalationsTab } from "@/components/moderation/escalations-tab";
 import { ReviewContentDialog } from "@/components/moderation/review-content-dialog";
+import { AssignCounsellorDialog } from "@/components/moderation/assign-counsellor-dialog";
 import { InviteModeratorDialog } from "@/components/moderation/invite-moderator-dialog";
 
 export default function ReportsPage() {
@@ -48,6 +50,7 @@ export default function ReportsPage() {
 
   // Invite Moderator Dialog State
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [assignReport, setAssignReport] = useState<Report | null>(null);
   const [inviteUserId, setInviteUserId] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isInviting, setIsInviting] = useState(false);
@@ -263,6 +266,7 @@ export default function ReportsPage() {
             setReportPage={setReportPage}
             onViewContent={handleViewContent}
             onUpdateStatus={(report, status) => handleUpdateStatus(report, status)}
+            onAssignCounsellor={setAssignReport}
           />
         </TabsContent>
 
@@ -307,6 +311,27 @@ export default function ReportsPage() {
         onDeleteContent={handleDeleteContent}
         onSuspendUser={handleSuspendUser}
         onUpdateStatus={(status) => handleUpdateStatus(currentReport!, status)}
+      />
+
+      <AssignCounsellorDialog
+        isOpen={!!assignReport}
+        onOpenChange={(open) => {
+          if (!open) setAssignReport(null);
+        }}
+        onAssign={async (counsellorId) => {
+          if (!assignReport) return;
+          try {
+            await assignReportToCounsellor(assignReport.id, counsellorId);
+            toast.success("Counsellor assigned.");
+            setAssignReport(null);
+          } catch (error: unknown) {
+            toast.error(
+              "Failed to assign counsellor: " +
+                (error instanceof Error ? error.message : String(error))
+            );
+            throw error;
+          }
+        }}
       />
 
       <InviteModeratorDialog
