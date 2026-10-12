@@ -251,6 +251,25 @@ export async function adminInviteModerator(identifier: string) {
   return true;
 }
 
+function quoteFilterValue(value: string) {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function userIdFromEmailLookup(result: unknown) {
+  if (!result) return null;
+  if (typeof result === "string") return result;
+  if (Array.isArray(result)) {
+    const first = result[0] as { id?: string } | string | undefined;
+    if (!first) return null;
+    return typeof first === "string" ? first : first.id ?? null;
+  }
+  if (typeof result === "object" && result && "id" in result) {
+    const id = (result as { id?: unknown }).id;
+    return typeof id === "string" ? id : null;
+  }
+  return null;
+}
+
 export async function searchUsersForModerator(query: string) {
   const supabase = await createClient();
   const trimmed = query.trim();
@@ -259,20 +278,47 @@ export async function searchUsersForModerator(query: string) {
     return [];
   }
 
-  // Try searching profiles by email, full_name, or display_name (excluding existing moderators)
+  const pattern = quoteFilterValue(`%${trimmed}%`);
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, display_name, avatar_url, is_moderator")
-    .or(`email.ilike.%${trimmed}%,full_name.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`)
-    .neq("is_moderator", true)
+    .select("id, email, full_name, is_moderator")
+    .or(`email.ilike.${pattern},full_name.ilike.${pattern}`)
     .limit(8);
 
   if (error) {
     console.error("Error searching users:", error);
-    return [];
   }
 
-  return ((data || []) as UserProfile[]).filter((user: UserProfile) => !user.is_moderator);
+  const matches = new Map<string, UserProfile>();
+  for (const user of (data || []) as UserProfile[]) {
+    if (!user.is_moderator) matches.set(user.id, user);
+  }
+
+  // Save resolves emails through auth.users. Search has to do the same,
+  // because profiles.email can be empty while the login email exists.
+  if (trimmed.includes("@")) {
+    const { data: rpcUser } = await supabase.rpc("get_user_by_email", {
+      email_input: trimmed.toLowerCase(),
+    });
+    const resolvedId = userIdFromEmailLookup(rpcUser);
+
+    if (resolvedId && !matches.has(resolvedId)) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, is_moderator")
+        .eq("id", resolvedId)
+        .maybeSingle();
+
+      if (profile && !profile.is_moderator) {
+        matches.set(profile.id, {
+          ...(profile as UserProfile),
+          email: profile.email || trimmed.toLowerCase(),
+        });
+      }
+    }
+  }
+
+  return Array.from(matches.values());
 }
 
 export async function getModerators(page = 1, pageSize = 10) {
