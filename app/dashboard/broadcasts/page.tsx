@@ -120,7 +120,7 @@ export default function BroadcastsPage() {
               New Broadcast
             </CardTitle>
             <CardDescription>
-              This creates in-app notifications for all active users and triggers push delivery.
+              This creates in-app notifications for all active users, posts the message on the feed, and triggers push delivery.
             </CardDescription>
           </CardHeader>
           <CardContent>

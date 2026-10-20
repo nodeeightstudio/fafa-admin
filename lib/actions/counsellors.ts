@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { Counsellor, CounsellorFormData } from "@/types/counsellor";
+import { notifyUser } from "@/lib/actions/notify";
 
 export async function getCounsellors(filters?: {
   status?: string;
@@ -164,14 +165,6 @@ export async function createCounsellor(formData: CounsellorFormData) {
     .select()
     .single();
 
-  // After creation, if linked, ensuring the profile has the counselor flag set
-  if (profileId) {
-    await supabase.rpc("set_counselor_role", {
-      target_user_id: profileId,
-      is_counselor_val: true,
-    });
-  }
-
   if (error) {
     console.error("❌ Insert error:", {
       message: error.message,
@@ -184,6 +177,19 @@ export async function createCounsellor(formData: CounsellorFormData) {
         error.hint ? " - " + error.hint : ""
       }`
     );
+  }
+
+  if (profileId) {
+    await supabase.rpc("set_counselor_role", {
+      target_user_id: profileId,
+      is_counselor_val: true,
+    });
+    await notifyUser(supabase, profileId, {
+      type: "onboarding",
+      title: "You're onboarded as a counsellor",
+      message: "A FAFA admin added you as a counsellor. Open the app to manage your sessions.",
+      relatedId: data?.id ?? null,
+    });
   }
 
   return data as Counsellor;

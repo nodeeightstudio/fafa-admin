@@ -39,6 +39,23 @@ export async function sendBroadcast(formData: BroadcastFormData) {
     throw new Error(error.message);
   }
 
+  const content = [formData.title.trim(), formData.message.trim()]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const { error: postError } = await supabase.from("posts").insert({
+    user_id: user.id,
+    content,
+    category: "Broadcast",
+    hashtags: ["broadcast"],
+  });
+
+  if (postError) {
+    throw new Error(
+      `Notifications were sent, but the feed post was not created: ${postError.message}`
+    );
+  }
+
   return data as { success: boolean; broadcast_id: string; recipient_count: number };
 }
 

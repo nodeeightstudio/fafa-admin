@@ -19,6 +19,11 @@ import {
   CounsellorStatus,
   SPECIALTIES,
 } from "@/types/counsellor";
+
+interface SpecialtyOption {
+  slug: string;
+  name: string;
+}
 import { uploadImage } from "@/lib/upload";
 import { Loader2, Upload } from "lucide-react";
 import Image from "next/image";
@@ -52,6 +57,9 @@ export function CounsellorForm({
 }: CounsellorFormProps) {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
     initialData?.specialties || []
+  );
+  const [specialtyOptions, setSpecialtyOptions] = useState<SpecialtyOption[]>(
+    SPECIALTIES.map((name) => ({ slug: name, name }))
   );
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(
     initialData?.languages || ["English"]
@@ -106,10 +114,37 @@ export function CounsellorForm({
       });
   }, []);
 
-  const toggleSpecialty = (specialty: string) => {
-    const updated = selectedSpecialties.includes(specialty)
-      ? selectedSpecialties.filter((s) => s !== specialty)
-      : [...selectedSpecialties, specialty];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSpecialties() {
+      const { data, error } = await supabase
+        .from("specialties")
+        .select("slug, name")
+        .order("name", { ascending: true });
+
+      if (cancelled || error || !data?.length) return;
+
+      setSpecialtyOptions(
+        data.map((item) => ({
+          slug: item.slug,
+          name: item.name || item.slug,
+        }))
+      );
+    }
+
+    loadSpecialties();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleSpecialty = (specialty: SpecialtyOption) => {
+    const aliases = [specialty.name, specialty.slug];
+    const isSelected = aliases.some((value) => selectedSpecialties.includes(value));
+    const updated = isSelected
+      ? selectedSpecialties.filter((value) => !aliases.includes(value))
+      : [...selectedSpecialties.filter((value) => !aliases.includes(value)), specialty.name];
     setSelectedSpecialties(updated);
     setValue("specialties", updated);
   };
@@ -286,18 +321,21 @@ export function CounsellorForm({
         <div>
           <Label>Specialties *</Label>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            {SPECIALTIES.map((specialty) => (
-              <div key={specialty} className="flex items-center space-x-2">
+            {specialtyOptions.map((specialty) => (
+              <div key={specialty.slug} className="flex items-center space-x-2">
                 <Checkbox
-                  id={`specialty-${specialty}`}
-                  checked={selectedSpecialties.includes(specialty)}
+                  id={`specialty-${specialty.slug}`}
+                  checked={
+                    selectedSpecialties.includes(specialty.name) ||
+                    selectedSpecialties.includes(specialty.slug)
+                  }
                   onCheckedChange={() => toggleSpecialty(specialty)}
                 />
                 <label
-                  htmlFor={`specialty-${specialty}`}
+                  htmlFor={`specialty-${specialty.slug}`}
                   className="text-sm cursor-pointer"
                 >
-                  {specialty}
+                  {specialty.name}
                 </label>
               </div>
             ))}

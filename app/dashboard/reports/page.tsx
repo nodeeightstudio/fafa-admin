@@ -20,6 +20,7 @@ import {
   revokeModerator,
   searchUsersForModerator,
   getEscalatedUsers,
+  getEscalatedReports,
 } from "@/lib/actions/moderation";
 import {
   Report,
@@ -42,6 +43,7 @@ export default function ReportsPage() {
   const [suspensionPage, setSuspensionPage] = useState(1);
   const [moderatorPage, setModeratorPage] = useState(1);
   const [escalationPage, setEscalationPage] = useState(1);
+  const [escalatedPostPage, setEscalatedPostPage] = useState(1);
 
   const [selectedContent, setSelectedContent] = useState<ModeratedContent | null>(null);
   const [isContentViewOpen, setIsContentViewOpen] = useState(false);
@@ -98,6 +100,14 @@ export default function ReportsPage() {
   } = useSWR(
     activeTab === "escalations" ? [`escalations`, escalationPage] : null,
     () => getEscalatedUsers(escalationPage, 10)
+  );
+
+  const {
+    data: escalatedPosts,
+    isLoading: isEscalatedPostsLoading,
+  } = useSWR(
+    activeTab === "escalations" ? [`escalated-posts`, escalatedPostPage] : null,
+    () => getEscalatedReports(escalatedPostPage, 10)
   );
 
   const handleSuspendEscalatedUser = async (userId: string) => {
@@ -277,6 +287,11 @@ export default function ReportsPage() {
             escalationPage={escalationPage}
             setEscalationPage={setEscalationPage}
             onSuspendUser={handleSuspendEscalatedUser}
+            postsLoading={isEscalatedPostsLoading}
+            escalatedPosts={escalatedPosts}
+            postsPage={escalatedPostPage}
+            setPostsPage={setEscalatedPostPage}
+            onViewPost={handleViewContent}
           />
         </TabsContent>
 

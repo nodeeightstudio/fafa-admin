@@ -40,15 +40,46 @@ export function OverviewSnapshot() {
 
   useEffect(() => {
     async function fetchData() {
-      const { data: snapshot } = await supabase
-        .from('dashboard_analytics_snapshot')
-        .select('*')
-        .single()
+      const since = new Date()
+      since.setDate(since.getDate() - 30)
+      const sinceIso = since.toISOString()
 
-      const { data: external } = await supabase.from('external_metrics').select('*')
+      const [users, newUsers, posts, comments, likes, sessions, completed, institutions, snapshotResult, externalResult] =
+        await Promise.all([
+          supabase.from('profiles').select('*', { count: 'exact', head: true }),
+          supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', sinceIso),
+          supabase.from('posts').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
+          supabase.from('comments').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
+          supabase.from('post_likes').select('*', { count: 'exact', head: true }),
+          supabase.from('bookings').select('*', { count: 'exact', head: true }),
+          supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+          supabase.from('institutions').select('*', { count: 'exact', head: true }).eq('subscription_status', 'active'),
+          supabase.from('dashboard_analytics_snapshot').select('*').maybeSingle(),
+          supabase.from('external_metrics').select('*'),
+        ])
 
-      setStats(snapshot)
-      setExternalMetrics(external || [])
+      const snapshot = snapshotResult.data
+      const totalSessions = sessions.count ?? 0
+      const completedSessions = completed.count ?? 0
+      const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0
+
+      setStats({
+        total_registered_users: users.count ?? 0,
+        new_users_30d: newUsers.count ?? 0,
+        total_posts: posts.count ?? 0,
+        total_interactions: (comments.count ?? 0) + (likes.count ?? 0),
+        total_sessions: totalSessions,
+        completed_sessions: completedSessions,
+        counseling_completion_rate: completionRate,
+        safety_score: snapshot?.safety_score ?? 0,
+        less_alone_score: snapshot?.less_alone_score ?? 0,
+        support_score: snapshot?.support_score ?? 0,
+        nps_score: snapshot?.nps_score ?? 0,
+        emotional_relief_score: snapshot?.emotional_relief_score ?? 0,
+        retention_rate: snapshot?.retention_rate ?? 0,
+        institutions_onboarded: institutions.count ?? 0,
+      })
+      setExternalMetrics(externalResult.data || [])
       setLoading(false)
     }
 
