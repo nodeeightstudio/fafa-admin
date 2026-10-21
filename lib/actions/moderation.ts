@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { Report, ReportStatus, ReportedType, SuspendedUser, UserProfile } from "@/types/moderation";
 import { revalidatePath } from "next/cache";
+import { notifyUser } from "@/lib/actions/notify";
 
 export async function getReports(
   status?: ReportStatus,
@@ -247,6 +248,12 @@ export async function adminInviteModerator(identifier: string) {
     throw new Error(error.message);
   }
 
+  await notifyUser(supabase, targetUserId, {
+    type: "onboarding",
+    title: "You're onboarded as a moderator",
+    message: "A FAFA admin granted you moderator access. You can review reported posts in the app.",
+  });
+
   revalidatePath("/dashboard/reports");
   return true;
 }
@@ -387,6 +394,52 @@ export async function flagPostByModerator(postId: string) {
   return data;
 }
 
+export async function getEscalatedReports(page = 1, pageSize = 10) {
+  const supabase = await createClient();
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("reports")
+    .select("*", { count: "exact" })
+    .eq("status", "escalated")
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const reports = (data || []) as Report[];
+  const postIds = reports
+    .filter((report) => report.reported_type === "post")
+    .map((report) => report.reported_id);
+
+  let postsById = new Map<string, { content?: string; is_deleted?: boolean }>();
+  if (postIds.length > 0) {
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, content, is_deleted")
+      .in("id", postIds);
+    postsById = new Map((posts || []).map((post) => [post.id, post]));
+  }
+
+  return {
+    data: reports.map((report) => ({
+      ...report,
+      content:
+        report.reported_type === "post"
+          ? postsById.get(report.reported_id)?.content || ""
+          : "",
+    })),
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+}
+
 export async function getEscalatedUsers(page = 1, pageSize = 10) {
   const supabase = await createClient();
 
@@ -463,6 +516,19 @@ export async function assignReportToCounsellor(reportId: string, counsellorId: s
   );
 
   if (error) throw new Error(error.message);
+
+  const { data: counsellor } = await supabase
+    .from("counsellors")
+    .select("profile_id, name")
+    .eq("id", counsellorId)
+    .maybeSingle();
+
+  await notifyUser(supabase, counsellor?.profile_id, {
+    type: "escalation_assigned",
+    title: "An escalation was assigned to you",
+    message: "A FAFA admin assigned you an escalated report. Open the app to review it.",
+    relatedId: reportId,
+  });
 
   revalidatePath("/dashboard/reports");
 }
